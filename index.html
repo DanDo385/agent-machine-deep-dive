@@ -1,0 +1,1459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The 5-Part Agent Machine — Deep Dive</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@400;600;700;800&family=Inter:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #0a0c0f;
+    --bg2: #0f1218;
+    --bg3: #141820;
+    --border: #1e2530;
+    --border2: #2a3340;
+    --text: #c8d0dc;
+    --text-dim: #5a6880;
+    --text-bright: #e8eef8;
+    --accent: #3b82f6;
+    --accent2: #06b6d4;
+    --accent3: #8b5cf6;
+    --green: #10b981;
+    --yellow: #f59e0b;
+    --red: #ef4444;
+    --orange: #f97316;
+
+    --p1: #3b82f6;
+    --p2: #06b6d4;
+    --p3: #8b5cf6;
+    --p4: #10b981;
+    --p5: #f59e0b;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    line-height: 1.7;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* ── NAV ── */
+  nav {
+    width: 240px;
+    min-width: 240px;
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+    font-size: 12px;
+  }
+  nav .logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 0 20px 20px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 16px;
+    letter-spacing: 0.05em;
+  }
+  nav a {
+    display: block;
+    padding: 6px 20px;
+    color: var(--text-dim);
+    text-decoration: none;
+    transition: all 0.15s;
+    border-left: 2px solid transparent;
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+  }
+  nav a:hover { color: var(--text-bright); border-left-color: var(--border2); }
+  nav .nav-section {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    padding: 14px 20px 4px;
+    text-transform: uppercase;
+  }
+  nav a.p1 { color: var(--p1); } nav a.p1:hover { border-left-color: var(--p1); }
+  nav a.p2 { color: var(--p2); } nav a.p2:hover { border-left-color: var(--p2); }
+  nav a.p3 { color: var(--p3); } nav a.p3:hover { border-left-color: var(--p3); }
+  nav a.p4 { color: var(--p4); } nav a.p4:hover { border-left-color: var(--p4); }
+  nav a.p5 { color: var(--p5); } nav a.p5:hover { border-left-color: var(--p5); }
+
+  /* ── MAIN ── */
+  main {
+    flex: 1;
+    max-width: 860px;
+    padding: 48px 56px 120px;
+    overflow: hidden;
+  }
+
+  /* ── TYPOGRAPHY ── */
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 42px;
+    font-weight: 800;
+    color: var(--text-bright);
+    line-height: 1.1;
+    margin-bottom: 12px;
+  }
+  h2 {
+    font-family: 'Syne', sans-serif;
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin: 56px 0 20px;
+    padding-top: 8px;
+  }
+  h3 {
+    font-family: 'Syne', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin: 32px 0 12px;
+  }
+  h4 {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin: 24px 0 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  p { margin-bottom: 16px; }
+  strong { color: var(--text-bright); font-weight: 500; }
+  em { color: var(--accent2); font-style: normal; }
+
+  /* ── PART HEADERS ── */
+  .part-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin: 64px 0 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .part-badge {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 4px;
+    letter-spacing: 0.05em;
+  }
+  .part-header h2 { margin: 0; padding: 0; }
+
+  .badge-p1 { background: rgba(59,130,246,0.15); color: var(--p1); border: 1px solid rgba(59,130,246,0.3); }
+  .badge-p2 { background: rgba(6,182,212,0.15); color: var(--p2); border: 1px solid rgba(6,182,212,0.3); }
+  .badge-p3 { background: rgba(139,92,246,0.15); color: var(--p3); border: 1px solid rgba(139,92,246,0.3); }
+  .badge-p4 { background: rgba(16,185,129,0.15); color: var(--p4); border: 1px solid rgba(16,185,129,0.3); }
+  .badge-p5 { background: rgba(245,158,11,0.15); color: var(--p5); border: 1px solid rgba(245,158,11,0.3); }
+
+  /* ── DIAGRAM ── */
+  .diagram-wrap {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 32px;
+    margin: 24px 0;
+    overflow-x: auto;
+  }
+
+  /* ── CODE ── */
+  pre {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px 24px;
+    overflow-x: auto;
+    margin: 16px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.65;
+  }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+  p code, li code {
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 12px;
+    color: var(--accent2);
+  }
+
+  .kw { color: #c084fc; }
+  .fn { color: #60a5fa; }
+  .str { color: #86efac; }
+  .cm { color: var(--text-dim); font-style: italic; }
+  .num { color: #fb923c; }
+  .type { color: #f59e0b; }
+  .op { color: #e2e8f0; }
+
+  /* ── CALLOUTS ── */
+  .callout {
+    border-left: 3px solid;
+    padding: 14px 18px;
+    margin: 20px 0;
+    border-radius: 0 6px 6px 0;
+    font-size: 14px;
+  }
+  .callout-analogy { border-color: var(--accent2); background: rgba(6,182,212,0.07); }
+  .callout-analogy::before { content: "ANALOGY ↗  "; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--accent2); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+  .callout-good { border-color: var(--green); background: rgba(16,185,129,0.07); }
+  .callout-good::before { content: "✓  HEALTHY SIGNAL"; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--green); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+  .callout-bad { border-color: var(--red); background: rgba(239,68,68,0.07); }
+  .callout-bad::before { content: "✗  FAILURE SIGNAL"; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--red); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+  .callout-fix { border-color: var(--yellow); background: rgba(245,158,11,0.07); }
+  .callout-fix::before { content: "⚙  FIX"; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--yellow); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+  .callout-use { border-color: var(--orange); background: rgba(249,115,22,0.07); }
+  .callout-use::before { content: "REAL-WORLD USE CASE"; font-family: 'JetBrains Mono', monospace; font-size: 10px; font-weight: 700; color: var(--orange); letter-spacing: 0.08em; display: block; margin-bottom: 6px; }
+
+  /* ── EVAL GRID ── */
+  .eval-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .eval-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px 16px;
+    font-size: 13px;
+  }
+  .eval-card .label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-bottom: 6px;
+  }
+  .green .label { color: var(--green); }
+  .red .label { color: var(--red); }
+
+  /* ── FLOW TABLE ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 13px;
+  }
+  th {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,0.02); }
+
+  /* ── DIVIDER ── */
+  .divider {
+    height: 1px;
+    background: var(--border);
+    margin: 48px 0;
+  }
+
+  /* ── OVERLAP ── */
+  .overlap-zone {
+    background: var(--bg2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 20px 24px;
+    margin: 16px 0;
+    position: relative;
+  }
+  .overlap-zone .zone-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--accent3);
+    letter-spacing: 0.08em;
+    margin-bottom: 8px;
+  }
+
+  /* ── SCENARIO ── */
+  .scenario {
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    overflow: hidden;
+    margin: 24px 0;
+  }
+  .scenario-header {
+    padding: 12px 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+  }
+  .scenario-bad .scenario-header { background: rgba(239,68,68,0.1); color: var(--red); }
+  .scenario-good .scenario-header { background: rgba(16,185,129,0.1); color: var(--green); }
+  .scenario-body { padding: 20px; }
+
+  ul, ol { padding-left: 24px; margin-bottom: 16px; }
+  li { margin-bottom: 6px; }
+
+  .subtitle {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 32px;
+    letter-spacing: 0.03em;
+  }
+
+  .hero-diagram {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 28px;
+    margin: 28px 0;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="logo">AGENT MACHINE<br>DEEP DIVE v1.0</div>
+  <div class="nav-section">Overview</div>
+  <a href="#overview">The 5-Part Machine</a>
+  <a href="#how-they-move">How Parts Move</a>
+
+  <div class="nav-section">The 5 Parts</div>
+  <a href="#part1" class="p1">① Platform Input</a>
+  <a href="#part2" class="p2">② Session Hydration</a>
+  <a href="#part3" class="p3">③ Agent Loop</a>
+  <a href="#part4" class="p4">④ Tool Dispatch</a>
+  <a href="#part5" class="p5">⑤ Persistence</a>
+
+  <div class="nav-section">Coordination</div>
+  <a href="#overlap">Overlap Zones</a>
+  <a href="#poor-coord">Poor Coordination</a>
+  <a href="#good-coord">Fixed Example</a>
+
+  <div class="nav-section">Individual Failures</div>
+  <a href="#fail1" class="p1">Input Failure</a>
+  <a href="#fail2" class="p2">Hydration Failure</a>
+  <a href="#fail3" class="p3">Loop Failure</a>
+  <a href="#fail4" class="p4">Dispatch Failure</a>
+  <a href="#fail5" class="p5">Persistence Failure</a>
+</nav>
+
+<main>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- HERO -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <h1>The 5-Part<br>Agent Machine</h1>
+  <p class="subtitle">// Every AI agent ever built runs on this skeleton. No exceptions.</p>
+
+  <p>Strip away the branding, the feature lists, the GitHub star counts. Every agent — Hermes, OpenClaw, Claude Code, AutoGPT, LangChain agents, your custom bot — is the same machine with the same five parts. The features are trim. The skeleton is this:</p>
+
+  <div class="hero-diagram">
+<pre style="background:none;border:none;padding:0;margin:0;">
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                                                                             │
+│   ┌──────────────┐    ┌──────────────┐    ┌──────────────┐                 │
+│   │ ① PLATFORM   │───▶│ ② SESSION    │───▶│ ③ AGENT      │                 │
+│   │    INPUT     │    │  HYDRATION   │    │    LOOP      │◀─────────┐      │
+│   └──────────────┘    └──────────────┘    └──────┬───────┘          │      │
+│                                                  │                  │      │
+│                                                  ▼                  │      │
+│                                           ┌──────────────┐          │      │
+│                                           │ ④ TOOL       │──────────┘      │
+│                                           │  DISPATCH    │  (results back) │
+│                                           └──────┬───────┘                 │
+│                                                  │                         │
+│                                                  ▼                         │
+│                                           ┌──────────────┐                 │
+│                                           │ ⑤ PERSISTENCE│                 │
+│                                           │              │                 │
+│                                           └──────────────┘                 │
+│                                                                             │
+│   PLATFORM INPUT     = The ears     (Discord, Telegram, CLI, API)          │
+│   SESSION HYDRATION  = The memory   (loading what happened before)         │
+│   AGENT LOOP         = The brain    (LLM think → act → think → act)        │
+│   TOOL DISPATCH      = The hands    (executing real actions in the world)   │
+│   PERSISTENCE        = The diary    (writing down what happened)            │
+└─────────────────────────────────────────────────────────────────────────────┘
+</pre>
+  </div>
+
+  <p>This document does a deep dive on each part: what it is, how it works, real-world analogies, how to evaluate it, code examples, and exactly what breaks when it fails — and how to fix it.</p>
+
+  <!-- ══════════════════════════════════════════════════ -->
+  <!-- HOW THEY MOVE -->
+  <!-- ══════════════════════════════════════════════════ -->
+  <h2 id="how-they-move">How the Parts Move Together</h2>
+
+  <p>Think of a 911 dispatch center. A call comes in (Platform Input). The dispatcher pulls up the caller's address and history (Session Hydration). The dispatcher thinks through the situation (Agent Loop). They send police/fire/ambulance (Tool Dispatch). The outcome gets logged in the case file (Persistence). Next time the same address calls, the dispatcher sees the history immediately.</p>
+
+  <p>The <strong>feedback loop</strong> is what makes it an "agent" rather than a chatbot. A chatbot fires once and stops. An agent loops: the result of tool dispatch feeds back into the agent loop, which may trigger more tool dispatch, which feeds back again, until the model decides it's done. This is the difference between "tell me about the weather" and "check the weather, compare it to last week, write a summary, and email it to me."</p>
+
+  <p>Each part has a job. When all five do their jobs cleanly, the system feels magical. When one fails, the others can't compensate — the failure propagates forward through the chain.</p>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- PART 1: PLATFORM INPUT -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="part-header" id="part1">
+    <span class="part-badge badge-p1">PART 1</span>
+    <h2 style="color:var(--p1)">Platform Input — The Ears</h2>
+  </div>
+
+  <h3>What It Is</h3>
+  <p>Platform Input is the layer that converts raw platform events (a Discord message, a Telegram voice note, an HTTP POST, a CLI keystroke, a cron tick) into a normalized, clean <strong>message object</strong> the rest of the system can reason about. Its only job is translation. It doesn't think. It doesn't store. It listens and converts.</p>
+
+  <div class="callout callout-analogy">
+    Think of it like a <strong>simultaneous interpreter at the UN</strong>. The speaker says something in Arabic. The interpreter doesn't have opinions about what was said. They translate it into English and hand it to the next person. Platform Input is that interpreter — except instead of languages, it's converting platform-native event formats (Discord's WebSocket payloads, Telegram's Bot API JSON, raw stdin bytes) into one universal message format your agent understands.
+  </div>
+
+  <h3>How It Works</h3>
+  <p>Every platform speaks a different dialect. Discord sends an event payload with guild_id, channel_id, author, content, attachments. Telegram sends update_id, message.from.id, message.text. A CLI sends raw bytes from stdin. Platform Input normalizes all of these into one canonical struct:</p>
+
+  <pre><span class="kw">type</span> <span class="type">IncomingMessage</span> <span class="kw">struct</span> {
+    <span class="cm">// Who sent it</span>
+    UserID      <span class="type">string</span>
+    UserHandle  <span class="type">string</span>
+
+    <span class="cm">// Where it came from</span>
+    Platform    <span class="type">string</span>    <span class="cm">// "discord", "telegram", "cli"</span>
+    ChannelID   <span class="type">string</span>    <span class="cm">// the routing key for session lookup</span>
+
+    <span class="cm">// What they said</span>
+    Text        <span class="type">string</span>
+    Attachments []<span class="type">Attachment</span>
+
+    <span class="cm">// Metadata</span>
+    Timestamp   <span class="type">time.Time</span>
+    MessageID   <span class="type">string</span>    <span class="cm">// platform-native ID (for threading, replies)</span>
+    IsAuthorized <span class="type">bool</span>    <span class="cm">// did this user pass the allowlist check?</span>
+}
+
+<span class="cm">// Each platform adapter implements this interface</span>
+<span class="kw">type</span> <span class="type">PlatformAdapter</span> <span class="kw">interface</span> {
+    Start(ctx <span class="type">context.Context</span>, out <span class="kw">chan</span>&lt;<span class="type">IncomingMessage</span>) <span class="type">error</span>
+    Send(channelID <span class="type">string</span>, text <span class="type">string</span>) <span class="type">error</span>
+    SendTyping(channelID <span class="type">string</span>) <span class="type">error</span>
+}</pre>
+
+  <pre><span class="cm">// Discord adapter — converts Discord event into IncomingMessage</span>
+<span class="kw">func</span> (a *<span class="type">DiscordAdapter</span>) <span class="fn">onMessageCreate</span>(s *discordgo.Session, m *discordgo.MessageCreate) {
+    <span class="kw">if</span> m.Author.Bot { <span class="kw">return</span> } <span class="cm">// ignore other bots</span>
+
+    msg := <span class="type">IncomingMessage</span>{
+        UserID:      m.Author.ID,
+        UserHandle:  m.Author.Username,
+        Platform:    <span class="str">"discord"</span>,
+        ChannelID:   m.ChannelID,        <span class="cm">// key line — routing key</span>
+        Text:        m.Content,
+        Timestamp:   time.Now(),
+        MessageID:   m.ID,
+        IsAuthorized: a.allowlist.Contains(m.Author.ID),
+    }
+
+    <span class="cm">// Handle attachments (images, files)</span>
+    <span class="kw">for</span> _, att := <span class="kw">range</span> m.Attachments {
+        msg.Attachments = <span class="fn">append</span>(msg.Attachments, <span class="type">Attachment</span>{
+            URL:      att.URL,
+            Filename: att.Filename,
+            MimeType: att.ContentType,
+        })
+    }
+
+    a.out &lt;- msg  <span class="cm">// send into the pipeline</span>
+}</pre>
+
+  <div class="callout callout-use">
+    <strong>Hermes gateway</strong> has 20 platform adapters doing exactly this. Your OpenClaw Discord bot is a single-platform version of the same pattern. The adapter for Signal looks almost identical to the one for Discord — just different library calls. The normalized <code>IncomingMessage</code> struct is the same in both cases, which is why you can add a new platform without touching the agent loop.
+  </div>
+
+  <h3>Authorization Lives Here</h3>
+  <p>Platform Input is also the <strong>security perimeter</strong>. It should check authorization before the message ever reaches the agent loop. Fail fast, fail early. If a user isn't on the allowlist, drop the message here — don't waste a token on it.</p>
+
+  <h3>Evaluating Platform Input</h3>
+  <div class="eval-grid">
+    <div class="eval-card green">
+      <div class="label">Working Well</div>
+      Every platform event arrives as a clean, normalized struct. The agent loop never sees platform-specific fields. Authorization is checked before any tokens are spent. Attachments are pre-fetched or at least pre-identified. Latency from event to pipeline is under 100ms.
+    </div>
+    <div class="eval-card red">
+      <div class="label">Breaking Down</div>
+      The agent loop contains if-statements like <code>if platform == "discord"</code>. Unauthorized users reach the LLM. Attachments arrive as raw URLs with no MIME type info. Events are dropped silently. The same message gets processed twice (Discord resend / Telegram retry quirk).
+    </div>
+  </div>
+
+  <div class="callout callout-good">
+    The agent loop should be <strong>completely unaware of which platform sent the message</strong>. If you can swap Discord for Telegram without touching agent logic, Platform Input is working correctly.
+  </div>
+
+  <div id="fail1"></div>
+
+  <h3>Individual Failure Example: Duplicate Message Processing</h3>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ BAD — No deduplication, double-fires on Telegram retries</div>
+    <div class="scenario-body">
+<pre><span class="cm">// Telegram retries unacknowledged updates. If your handler is slow,
+// you get the same update twice. This fires the agent twice.</span>
+<span class="kw">func</span> <span class="fn">handleUpdate</span>(update <span class="type">tgbotapi.Update</span>) {
+    msg := <span class="fn">normalize</span>(update)
+    pipeline &lt;- msg  <span class="cm">// OOPS: no dedup check</span>
+}</pre>
+      <p style="color:var(--red);font-size:13px;margin:12px 0 0">Result: Dex executes the same task twice. User gets two responses. If the task was "send an email", it sent two emails.</p>
+    </div>
+  </div>
+
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — Idempotency key deduplication</div>
+    <div class="scenario-body">
+<pre><span class="kw">type</span> <span class="type">InputLayer</span> <span class="kw">struct</span> {
+    seen *<span class="type">sync.Map</span>  <span class="cm">// message_id → processed time</span>
+}
+
+<span class="kw">func</span> (il *<span class="type">InputLayer</span>) <span class="fn">process</span>(update <span class="type">tgbotapi.Update</span>) {
+    msgID := <span class="fn">fmt.Sprintf</span>(<span class="str">"tg:%d"</span>, update.Message.MessageID)
+
+    <span class="cm">// Check if already processed</span>
+    <span class="kw">if</span> _, exists := il.seen.<span class="fn">Load</span>(msgID); exists {
+        <span class="kw">return</span>  <span class="cm">// already handled, skip</span>
+    }
+
+    <span class="cm">// Mark as seen immediately (before processing, not after)</span>
+    il.seen.<span class="fn">Store</span>(msgID, time.<span class="fn">Now</span>())
+
+    msg := <span class="fn">normalize</span>(update)
+    pipeline &lt;- msg
+}
+
+<span class="cm">// Periodically clean old entries (older than 1 hour)</span>
+<span class="kw">func</span> (il *<span class="type">InputLayer</span>) <span class="fn">cleanup</span>() {
+    il.seen.<span class="fn">Range</span>(<span class="kw">func</span>(k, v <span class="kw">interface</span>{}) <span class="type">bool</span> {
+        <span class="kw">if</span> time.<span class="fn">Since</span>(v.(<span class="type">time.Time</span>)) > time.Hour {
+            il.seen.<span class="fn">Delete</span>(k)
+        }
+        <span class="kw">return</span> <span class="kw">true</span>
+    })
+}</pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- PART 2: SESSION HYDRATION -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="part-header" id="part2">
+    <span class="part-badge badge-p2">PART 2</span>
+    <h2 style="color:var(--p2)">Session Hydration — The Memory Recall</h2>
+  </div>
+
+  <h3>What It Is</h3>
+  <p>Session Hydration is the act of <strong>loading everything the agent needs to know before it starts thinking</strong>. The LLM has no persistent memory between API calls. Every single call to the API is a blank slate. Session Hydration is the process of filling in that blank slate — loading conversation history, user memory, system prompt components, skill files, and any other context the agent needs.</p>
+
+  <div class="callout callout-analogy">
+    Imagine a doctor seeing patients. Between appointments, the doctor remembers nothing — complete amnesia. Before each appointment, a nurse hands the doctor a briefing folder: "This is Dan. Last visit was 3 weeks ago. He has hypertension. His main concern today is X. He mentioned Y last time." The doctor reads the folder, walks in, and picks up exactly where things left off. <strong>Session Hydration is that briefing folder</strong>. Without it, every conversation starts from scratch: "Hi, I'm an AI assistant. How can I help you today?"
+  </div>
+
+  <h3>How It Works</h3>
+  <p>Session Hydration assembles the <strong>messages array</strong> that gets sent to the LLM API. This is a list of alternating user/assistant turns. It also assembles the system prompt. Together these are the complete "memory" the LLM has access to for this inference call.</p>
+
+  <pre><span class="kw">type</span> <span class="type">SessionHydrator</span> <span class="kw">struct</span> {
+    db          *<span class="type">SessionDB</span>
+    memoryStore *<span class="type">MemoryStore</span>
+    skillStore  *<span class="type">SkillStore</span>
+    maxTokens   <span class="type">int</span>
+}
+
+<span class="kw">func</span> (h *<span class="type">SessionHydrator</span>) <span class="fn">Hydrate</span>(msg <span class="type">IncomingMessage</span>) (<span class="type">HydratedSession</span>, <span class="type">error</span>) {
+    <span class="cm">// 1. Load conversation history for this channel</span>
+    history, _ := h.db.<span class="fn">LoadHistory</span>(msg.ChannelID, <span class="num">50</span>) <span class="cm">// last 50 turns</span>
+
+    <span class="cm">// 2. Load long-term memory for this user</span>
+    memory, _ := h.memoryStore.<span class="fn">LoadUserMemory</span>(msg.UserID)
+
+    <span class="cm">// 3. Load relevant skills</span>
+    skills, _ := h.skillStore.<span class="fn">GetActiveSkills</span>(msg.ChannelID)
+
+    <span class="cm">// 4. Build system prompt by assembling components</span>
+    systemPrompt := h.<span class="fn">buildSystemPrompt</span>(memory, skills)
+
+    <span class="cm">// 5. Budget tokens — don't overflow the context window</span>
+    messages := h.<span class="fn">budgetHistory</span>(history, h.maxTokens - h.<span class="fn">estimate</span>(systemPrompt))
+
+    <span class="cm">// 6. Append the incoming message</span>
+    messages = <span class="fn">append</span>(messages, <span class="type">Message</span>{Role: <span class="str">"user"</span>, Content: msg.Text})
+
+    <span class="kw">return</span> <span class="type">HydratedSession</span>{
+        SystemPrompt: systemPrompt,
+        Messages:     messages,
+        SessionKey:   msg.ChannelID,
+        UserID:       msg.UserID,
+    }, <span class="kw">nil</span>
+}
+
+<span class="kw">func</span> (h *<span class="type">SessionHydrator</span>) <span class="fn">buildSystemPrompt</span>(memory <span class="type">UserMemory</span>, skills []<span class="type">Skill</span>) <span class="type">string</span> {
+    <span class="kw">var</span> parts []<span class="type">string</span>
+
+    <span class="cm">// Core personality — soul.md equivalent</span>
+    parts = <span class="fn">append</span>(parts, h.<span class="fn">loadSoul</span>())
+
+    <span class="cm">// Long-term memory about this user</span>
+    <span class="kw">if</span> memory.Summary != <span class="str">""</span> {
+        parts = <span class="fn">append</span>(parts, <span class="str">"## User Context\n"</span> + memory.Summary)
+    }
+
+    <span class="cm">// Active skills for this session</span>
+    <span class="kw">for</span> _, skill := <span class="kw">range</span> skills {
+        parts = <span class="fn">append</span>(parts, skill.Content)
+    }
+
+    <span class="kw">return</span> strings.<span class="fn">Join</span>(parts, <span class="str">"\n\n"</span>)
+}
+
+<span class="cm">// Token budgeting — trim oldest messages first to fit context window</span>
+<span class="kw">func</span> (h *<span class="type">SessionHydrator</span>) <span class="fn">budgetHistory</span>(history []<span class="type">Message</span>, budget <span class="type">int</span>) []<span class="type">Message</span> {
+    total := <span class="num">0</span>
+    result := []<span class="type">Message</span>{}
+
+    <span class="cm">// Walk backwards from most recent</span>
+    <span class="kw">for</span> i := <span class="fn">len</span>(history) - <span class="num">1</span>; i >= <span class="num">0</span>; i-- {
+        tokens := h.<span class="fn">estimate</span>(history[i].Content)
+        <span class="kw">if</span> total + tokens > budget { <span class="kw">break</span> }
+        total += tokens
+        result = <span class="fn">append</span>([]<span class="type">Message</span>{history[i]}, result...) <span class="cm">// prepend</span>
+    }
+    <span class="kw">return</span> result
+}</pre>
+
+  <div class="callout callout-use">
+    <strong>Your OpenClaw setup:</strong> When Dex receives a Discord message in the <code>#sandbox</code> channel, Session Hydration is what loads <code>soul.md</code>, the <code>sandbox-memory.md</code> file, the relevant skill files for that channel, and the last N turns of conversation history — all before the LLM API call fires. The per-channel memory design you chose is exactly the right isolation boundary.
+  </div>
+
+  <h3>The Token Budget Problem</h3>
+  <p>This is Session Hydration's hardest problem. Models have a finite context window. Your history + system prompt + skills + new message must fit inside it. If you naively load everything, you'll blow the window and get an API error. The strategies in ascending sophistication:</p>
+
+  <table>
+    <tr><th>Strategy</th><th>How</th><th>Cost</th></tr>
+    <tr><td><strong>Truncate oldest</strong></td><td>Keep only the last N messages</td><td>Loses old context silently</td></tr>
+    <tr><td><strong>Summarize middle</strong></td><td>LLM call to compress old turns</td><td>Extra API cost, some fidelity loss</td></tr>
+    <tr><td><strong>Semantic recall</strong></td><td>Vector search for relevant past messages</td><td>Complex infrastructure (embeddings DB)</td></tr>
+    <tr><td><strong>Tiered memory</strong></td><td>Hot (recent) + warm (summary) + cold (search)</td><td>Highest complexity, best results</td></tr>
+  </table>
+
+  <h3>Evaluating Session Hydration</h3>
+  <div class="eval-grid">
+    <div class="eval-card green">
+      <div class="label">Working Well</div>
+      Agent references things said in prior sessions accurately. System prompt is stable across turns (not rebuilt from scratch each message). Token count is tracked and never exceeds context limit. History load is fast (&lt;50ms typically from SQLite). Skills relevant to the channel are loaded; irrelevant ones are not.
+    </div>
+    <div class="eval-card red">
+      <div class="label">Breaking Down</div>
+      Agent says "I don't have information about previous conversations" despite having history. System prompt is rebuilt differently each message causing prompt cache misses. History load causes a 2+ second delay. Loading ALL skills regardless of channel (wastes tokens). Context overflow crashes the API call.
+    </div>
+  </div>
+
+  <div id="fail2"></div>
+  <h3>Individual Failure Example: No Token Budget = Context Overflow</h3>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ BAD — Loads full history, no token limit</div>
+    <div class="scenario-body">
+<pre><span class="kw">func</span> <span class="fn">hydrateSession</span>(channelID <span class="type">string</span>) []<span class="type">Message</span> {
+    <span class="cm">// Load ALL messages for this channel — no limit</span>
+    rows, _ := db.<span class="fn">Query</span>(<span class="str">"SELECT role, content FROM messages WHERE channel=? ORDER BY ts ASC"</span>, channelID)
+    <span class="kw">var</span> messages []<span class="type">Message</span>
+    <span class="kw">for</span> rows.<span class="fn">Next</span>() {
+        <span class="kw">var</span> m <span class="type">Message</span>
+        rows.<span class="fn">Scan</span>(&m.Role, &m.Content)
+        messages = <span class="fn">append</span>(messages, m)
+    }
+    <span class="kw">return</span> messages  <span class="cm">// DISASTER after ~2 weeks of chat</span>
+}
+<span class="cm">// After 3 weeks of use: 8,000 messages × ~100 tokens = 800k tokens
+// Context window: 200k tokens. API returns: "context_length_exceeded"</span></pre>
+    </div>
+  </div>
+
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — Token-budgeted history with compression fallback</div>
+    <div class="scenario-body">
+<pre><span class="kw">const</span> MAX_HISTORY_TOKENS = <span class="num">80_000</span>  <span class="cm">// ~40% of 200k window</span>
+
+<span class="kw">func</span> <span class="fn">hydrateSession</span>(channelID <span class="type">string</span>, systemPromptTokens <span class="type">int</span>) []<span class="type">Message</span> {
+    budget := MAX_HISTORY_TOKENS - systemPromptTokens
+
+    <span class="cm">// Load recent messages with token counting</span>
+    rows, _ := db.<span class="fn">Query</span>(<span class="str">`
+        SELECT role, content, token_count
+        FROM messages
+        WHERE channel=?
+        ORDER BY ts DESC
+        LIMIT 200
+    `</span>, channelID)
+
+    <span class="kw">var</span> recent []<span class="type">Message</span>
+    totalTokens := <span class="num">0</span>
+
+    <span class="kw">for</span> rows.<span class="fn">Next</span>() {
+        <span class="kw">var</span> m <span class="type">Message</span>
+        <span class="kw">var</span> tokens <span class="type">int</span>
+        rows.<span class="fn">Scan</span>(&m.Role, &m.Content, &tokens)
+
+        <span class="kw">if</span> totalTokens + tokens > budget { <span class="kw">break</span> }
+        totalTokens += tokens
+        recent = <span class="fn">append</span>(recent, m)
+    }
+
+    <span class="cm">// Reverse to chronological order</span>
+    <span class="kw">for</span> i, j := <span class="num">0</span>, <span class="fn">len</span>(recent)-<span class="num">1</span>; i &lt; j; i, j = i+<span class="num">1</span>, j-<span class="num">1</span> {
+        recent[i], recent[j] = recent[j], recent[i]
+    }
+
+    <span class="cm">// Optional: prepend a compression summary if history was cut</span>
+    <span class="kw">if</span> rows.<span class="fn">Next</span>() {  <span class="cm">// more rows exist that we cut off</span>
+        summary := db.<span class="fn">GetSummary</span>(channelID)  <span class="cm">// pre-computed nightly</span>
+        <span class="kw">if</span> summary != <span class="str">""</span> {
+            recent = <span class="fn">append</span>([]<span class="type">Message</span>{{
+                Role: <span class="str">"system"</span>,
+                Content: <span class="str">"[Earlier context summary: "</span> + summary + <span class="str">"]"</span>,
+            }}, recent...)
+        }
+    }
+
+    <span class="kw">return</span> recent
+}</pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- PART 3: AGENT LOOP -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="part-header" id="part3">
+    <span class="part-badge badge-p3">PART 3</span>
+    <h2 style="color:var(--p3)">Agent Loop — The Brain</h2>
+  </div>
+
+  <h3>What It Is</h3>
+  <p>The Agent Loop is the core reasoning engine. It's a <code>while</code> loop that calls the LLM API, reads the response, and decides what to do next. It does NOT execute tool calls itself — it hands those to Tool Dispatch. It does NOT store anything — it hands that to Persistence. Its only job is to <strong>think</strong>: call the LLM, interpret the output, and orchestrate what happens next.</p>
+
+  <div class="callout callout-analogy">
+    The Agent Loop is a <strong>chess player in a tournament</strong>. The player looks at the board (the messages array), thinks about the position (the LLM call), makes a move (decides to use a tool OR give a final answer), then waits to see what happens (tool result or user response), and looks at the board again. The player doesn't physically move the pieces — a tournament official does (Tool Dispatch). The player doesn't record the game — a scorekeeper does (Persistence). The player just thinks and decides.
+  </div>
+
+  <h3>How It Works</h3>
+  <p>The LLM has two possible responses: "I'm done" (stop_reason = end_turn) or "I need to do something" (stop_reason = tool_use). The loop handles both:</p>
+
+  <pre><span class="kw">type</span> <span class="type">AgentLoop</span> <span class="kw">struct</span> {
+    client      <span class="type">LLMClient</span>
+    dispatcher  <span class="type">ToolDispatcher</span>
+    maxTurns    <span class="type">int</span>     <span class="cm">// safety: stop runaway loops</span>
+}
+
+<span class="kw">func</span> (al *<span class="type">AgentLoop</span>) <span class="fn">Run</span>(ctx <span class="type">context.Context</span>, session <span class="type">HydratedSession</span>) (<span class="type">AgentResult</span>, <span class="type">error</span>) {
+    messages := session.Messages
+    turns := <span class="num">0</span>
+
+    <span class="kw">for</span> {
+        turns++
+        <span class="kw">if</span> turns > al.maxTurns {
+            <span class="kw">return</span> <span class="type">AgentResult</span>{}, <span class="fn">fmt.Errorf</span>(<span class="str">"max turns (%d) exceeded"</span>, al.maxTurns)
+        }
+
+        <span class="cm">// ── THE CORE LLM CALL ──────────────────────────────────────────</span>
+        response, err := al.client.<span class="fn">Complete</span>(ctx, <span class="type">CompletionRequest</span>{
+            System:   session.SystemPrompt,
+            Messages: messages,
+            Tools:    al.<span class="fn">getAvailableTools</span>(),
+            Model:    <span class="str">"claude-sonnet-4-20250514"</span>,
+        })
+        <span class="kw">if</span> err != <span class="kw">nil</span> { <span class="kw">return</span> <span class="type">AgentResult</span>{}, err }
+
+        <span class="cm">// ── INTERPRET THE RESPONSE ─────────────────────────────────────</span>
+        <span class="kw">switch</span> response.StopReason {
+
+        <span class="kw">case</span> <span class="str">"end_turn"</span>:
+            <span class="cm">// Model is done — extract final text and return</span>
+            finalText := response.<span class="fn">GetText</span>()
+            <span class="kw">return</span> <span class="type">AgentResult</span>{
+                Text:     finalText,
+                Messages: messages,
+                Turns:    turns,
+            }, <span class="kw">nil</span>
+
+        <span class="kw">case</span> <span class="str">"tool_use"</span>:
+            <span class="cm">// Model wants to use tools — hand off to dispatcher</span>
+
+            <span class="cm">// 1. Append the assistant's message (with tool_use blocks)</span>
+            messages = <span class="fn">append</span>(messages, <span class="type">Message</span>{
+                Role:    <span class="str">"assistant"</span>,
+                Content: response.Content,  <span class="cm">// includes tool_use blocks</span>
+            })
+
+            <span class="cm">// 2. Execute ALL tool calls in this response</span>
+            toolResults, err := al.dispatcher.<span class="fn">Execute</span>(ctx, response.ToolCalls)
+            <span class="kw">if</span> err != <span class="kw">nil</span> { <span class="kw">return</span> <span class="type">AgentResult</span>{}, err }
+
+            <span class="cm">// 3. Append tool results as a user message</span>
+            messages = <span class="fn">append</span>(messages, <span class="type">Message</span>{
+                Role:    <span class="str">"user"</span>,
+                Content: toolResults,  <span class="cm">// tool_result blocks</span>
+            })
+
+            <span class="cm">// 4. Loop back — model will see results and decide next action</span>
+            <span class="kw">continue</span>
+
+        <span class="kw">default</span>:
+            <span class="kw">return</span> <span class="type">AgentResult</span>{}, <span class="fn">fmt.Errorf</span>(<span class="str">"unexpected stop reason: %s"</span>, response.StopReason)
+        }
+    }
+}</pre>
+
+  <h3>The messages Array — The Actual Working Memory</h3>
+  <p>This is the most important data structure in the entire system. As the loop runs, the messages array grows. Here's what it looks like mid-task:</p>
+
+  <pre><span class="cm">// What the messages array looks like during a multi-step task:
+// "Research AAPL and write a summary"</span>
+
+messages = [
+  {<span class="str">"role"</span>: <span class="str">"user"</span>,      <span class="str">"content"</span>: <span class="str">"Research AAPL and write a summary"</span>},
+  {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: [{<span class="str">"type"</span>: <span class="str">"tool_use"</span>, <span class="str">"name"</span>: <span class="str">"web_search"</span>, <span class="str">"input"</span>: {<span class="str">"query"</span>: <span class="str">"AAPL Q2 2026 earnings"</span>}}]},
+  {<span class="str">"role"</span>: <span class="str">"user"</span>,      <span class="str">"content"</span>: [{<span class="str">"type"</span>: <span class="str">"tool_result"</span>, <span class="str">"content"</span>: <span class="str">"Apple reported $91B revenue..."</span>}]},
+  {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: [{<span class="str">"type"</span>: <span class="str">"tool_use"</span>, <span class="str">"name"</span>: <span class="str">"web_search"</span>, <span class="str">"input"</span>: {<span class="str">"query"</span>: <span class="str">"AAPL analyst ratings 2026"</span>}}]},
+  {<span class="str">"role"</span>: <span class="str">"user"</span>,      <span class="str">"content"</span>: [{<span class="str">"type"</span>: <span class="str">"tool_result"</span>, <span class="str">"content"</span>: <span class="str">"Goldman Sachs Buy $230..."</span>}]},
+  {<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: <span class="str">"# Apple Inc. Summary\n\nApple reported..."</span>}  <span class="cm">// final answer</span>
+]
+
+<span class="cm">// The model sees ALL of this on every loop iteration.
+// It can "remember" what the first search returned because it's in the array.
+// This is not magic — it's just text passed to an API.</span></pre>
+
+  <div class="callout callout-use">
+    <strong>Real case — Dex market update cron:</strong> The agent loop runs, calls <code>web_search</code> for BTC price, then calls it again for ETH, then calls <code>write_file</code> to save the result to the vault, then returns a formatted message. That's 4 loop iterations — 3 tool_use rounds plus 1 end_turn. The messages array at the end has 8 entries (1 user + 3 assistant tool_use + 3 tool_results + 1 assistant final). All that happens inside one call to <code>AgentLoop.Run()</code>.
+  </div>
+
+  <h3>Safety: The maxTurns Guard</h3>
+  <p>Without a loop limit, a buggy tool or confused model can loop forever — burning tokens and money. Always have a max turns ceiling. A reasonable default is 20 for interactive agents, 10 for cron jobs.</p>
+
+  <h3>Evaluating the Agent Loop</h3>
+  <div class="eval-grid">
+    <div class="eval-card green">
+      <div class="label">Working Well</div>
+      Model consistently uses the right tools for the right tasks. Multi-step tasks complete without human intervention. Loop terminates cleanly (end_turn, not timeout). Tool use is purposeful — no redundant search calls. Turn count for typical tasks is predictable and low (2-5 turns for most tasks).
+    </div>
+    <div class="eval-card red">
+      <div class="label">Breaking Down</div>
+      Model calls the same tool repeatedly with the same arguments (stuck in a loop). Tool results are being ignored (model doesn't update its plan). Max turns is hit on simple tasks. Model returns "end_turn" without actually completing the task. Model hallucinates tool names that don't exist in the registry.
+    </div>
+  </div>
+
+  <div id="fail3"></div>
+  <h3>Individual Failure Example: Infinite Tool Loop</h3>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ BAD — Model loops on a broken tool, no circuit breaker</div>
+    <div class="scenario-body">
+<pre><span class="cm">// web_search returns an error. The model sees "error" and tries again.
+// The tool keeps erroring. The model keeps trying. No max turns.
+// This runs until you hit API rate limits or your wallet is empty.</span>
+
+<span class="kw">for</span> {
+    resp, _ := llm.<span class="fn">Complete</span>(messages, tools)
+    <span class="kw">if</span> resp.StopReason == <span class="str">"end_turn"</span> { <span class="kw">return</span> resp }
+    results := dispatcher.<span class="fn">Execute</span>(resp.ToolCalls) <span class="cm">// keeps erroring</span>
+    messages = <span class="fn">append</span>(messages, resp, results)
+    <span class="cm">// loop forever ↑</span>
+}</pre>
+    </div>
+  </div>
+
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — maxTurns + consecutive error detection</div>
+    <div class="scenario-body">
+<pre>turns := <span class="num">0</span>
+consecutiveErrors := <span class="num">0</span>
+maxTurns := <span class="num">20</span>
+maxConsecutiveErrors := <span class="num">3</span>
+
+<span class="kw">for</span> {
+    turns++
+    <span class="kw">if</span> turns > maxTurns {
+        <span class="kw">return</span> <span class="fn">fmt.Errorf</span>(<span class="str">"safety limit: exceeded %d turns"</span>, maxTurns)
+    }
+
+    resp, _ := llm.<span class="fn">Complete</span>(messages, tools)
+    <span class="kw">if</span> resp.StopReason == <span class="str">"end_turn"</span> { <span class="kw">return</span> resp }
+
+    results, err := dispatcher.<span class="fn">Execute</span>(resp.ToolCalls)
+
+    <span class="kw">if</span> err != <span class="kw">nil</span> {
+        consecutiveErrors++
+        <span class="kw">if</span> consecutiveErrors >= maxConsecutiveErrors {
+            <span class="cm">// Tell the model the tool is broken, let it adapt</span>
+            messages = <span class="fn">append</span>(messages, <span class="type">SystemMessage</span>{
+                Content: <span class="str">"Tool unavailable. Please complete the task with available information."</span>,
+            })
+            consecutiveErrors = <span class="num">0</span>
+        }
+    } <span class="kw">else</span> {
+        consecutiveErrors = <span class="num">0</span>  <span class="cm">// reset on success</span>
+    }
+
+    messages = <span class="fn">append</span>(messages, resp, results)
+}</pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- PART 4: TOOL DISPATCH -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="part-header" id="part4">
+    <span class="part-badge badge-p4">PART 4</span>
+    <h2 style="color:var(--p4)">Tool Dispatch — The Hands</h2>
+  </div>
+
+  <h3>What It Is</h3>
+  <p>Tool Dispatch is the execution layer. When the agent loop says "call the web_search tool with query=AAPL earnings", Tool Dispatch is the system that actually goes and does that — makes the HTTP call, runs the bash command, writes the file, sends the API request. It receives a tool call specification from the agent loop, executes it in the real world, and returns the result.</p>
+
+  <div class="callout callout-analogy">
+    Tool Dispatch is the <strong>hands of a surgeon</strong>, responding to the surgeon's brain. The brain (Agent Loop) thinks "cut here, 3 centimeters". The hands (Tool Dispatch) pick up the scalpel and actually make the cut. The hands don't think — they execute with precision. But if the hands are trembling (slow tool execution), or they pick up the wrong instrument (wrong tool called), or the scalpel is dull (buggy tool implementation), the whole operation fails — even if the brain was right.
+  </div>
+
+  <h3>The Tool Registry Pattern</h3>
+  <p>Every agent uses a registry. Tools self-register at startup. The dispatcher looks up tools by name and executes them. This is clean dependency injection:</p>
+
+  <pre><span class="cm">// tools/registry.go — no dependencies, imported by all tools</span>
+<span class="kw">type</span> <span class="type">ToolFn</span> <span class="kw">func</span>(ctx <span class="type">context.Context</span>, args <span class="kw">map</span>[<span class="type">string</span>]<span class="kw">interface</span>{}) (<span class="type">string</span>, <span class="type">error</span>)
+
+<span class="kw">type</span> <span class="type">ToolDef</span> <span class="kw">struct</span> {
+    Name        <span class="type">string</span>
+    Description <span class="type">string</span>
+    Schema      <span class="type">JSONSchema</span>  <span class="cm">// what args the tool accepts</span>
+    Fn          <span class="type">ToolFn</span>
+    Dangerous   <span class="type">bool</span>       <span class="cm">// requires human approval?</span>
+    Tags        []<span class="type">string</span>   <span class="cm">// for filtering by context</span>
+}
+
+<span class="kw">var</span> globalRegistry = <span class="kw">map</span>[<span class="type">string</span>]*<span class="type">ToolDef</span>{}
+
+<span class="kw">func</span> <span class="fn">Register</span>(def <span class="type">ToolDef</span>) {
+    globalRegistry[def.Name] = &def
+}
+
+<span class="kw">func</span> <span class="fn">GetSchemas</span>() []<span class="type">JSONSchema</span> {
+    <span class="cm">// Called by Agent Loop before each LLM API call
+    // Returns all tool schemas so the model knows what's available</span>
+    <span class="kw">var</span> schemas []<span class="type">JSONSchema</span>
+    <span class="kw">for</span> _, def := <span class="kw">range</span> globalRegistry {
+        schemas = <span class="fn">append</span>(schemas, def.Schema)
+    }
+    <span class="kw">return</span> schemas
+}</pre>
+
+  <pre><span class="cm">// tools/web_search.go — self-registers at import time</span>
+<span class="kw">func</span> <span class="fn">init</span>() {
+    <span class="fn">Register</span>(<span class="type">ToolDef</span>{
+        Name:        <span class="str">"web_search"</span>,
+        Description: <span class="str">"Search the web for current information. Returns top 5 results with titles and snippets."</span>,
+        Dangerous:   <span class="kw">false</span>,
+        Schema: <span class="type">JSONSchema</span>{
+            Properties: <span class="kw">map</span>[<span class="type">string</span>]<span class="type">Property</span>{
+                <span class="str">"query"</span>: {Type: <span class="str">"string"</span>, Description: <span class="str">"The search query"</span>},
+            },
+            Required: []<span class="type">string</span>{<span class="str">"query"</span>},
+        },
+        Fn: <span class="fn">webSearchFn</span>,
+    })
+}
+
+<span class="kw">func</span> <span class="fn">webSearchFn</span>(ctx <span class="type">context.Context</span>, args <span class="kw">map</span>[<span class="type">string</span>]<span class="kw">interface</span>{}) (<span class="type">string</span>, <span class="type">error</span>) {
+    query := args[<span class="str">"query"</span>].(<span class="type">string</span>)
+
+    results, err := searchClient.<span class="fn">Search</span>(ctx, query)
+    <span class="kw">if</span> err != <span class="kw">nil</span> {
+        <span class="cm">// IMPORTANT: return the error as a string, NOT as a Go error
+        // The model needs to read this error to know what happened</span>
+        <span class="kw">return</span> <span class="fn">fmt.Sprintf</span>(<span class="str">"Search failed: %v. Try a different query or use cached data."</span>, err), <span class="kw">nil</span>
+    }
+
+    <span class="kw">return</span> <span class="fn">formatResults</span>(results), <span class="kw">nil</span>
+}</pre>
+
+  <pre><span class="cm">// dispatcher.go — executes tool calls from the agent loop</span>
+<span class="kw">type</span> <span class="type">Dispatcher</span> <span class="kw">struct</span> {
+    approvalCallback <span class="kw">func</span>(toolName <span class="type">string</span>, args <span class="kw">map</span>[<span class="type">string</span>]<span class="kw">interface</span>{}) <span class="type">bool</span>
+}
+
+<span class="kw">func</span> (d *<span class="type">Dispatcher</span>) <span class="fn">Execute</span>(ctx <span class="type">context.Context</span>, calls []<span class="type">ToolCall</span>) (<span class="type">Message</span>, <span class="type">error</span>) {
+    <span class="kw">var</span> results []<span class="type">ToolResult</span>
+
+    <span class="cm">// Run tool calls — parallel when safe, sequential when order matters</span>
+    <span class="kw">var</span> wg sync.WaitGroup
+    resultChan := <span class="kw">make</span>(<span class="kw">chan</span> <span class="type">ToolResult</span>, <span class="fn">len</span>(calls))
+
+    <span class="kw">for</span> _, call := <span class="kw">range</span> calls {
+        def, ok := globalRegistry[call.Name]
+        <span class="kw">if</span> !ok {
+            results = <span class="fn">append</span>(results, <span class="type">ToolResult</span>{
+                ToolUseID: call.ID,
+                Content:   <span class="fn">fmt.Sprintf</span>(<span class="str">"Error: tool '%s' not found in registry"</span>, call.Name),
+                IsError:   <span class="kw">true</span>,
+            })
+            <span class="kw">continue</span>
+        }
+
+        <span class="cm">// Approval gate for dangerous tools</span>
+        <span class="kw">if</span> def.Dangerous && !d.approvalCallback.<span class="fn">Approve</span>(call.Name, call.Arguments) {
+            results = <span class="fn">append</span>(results, <span class="type">ToolResult</span>{
+                ToolUseID: call.ID,
+                Content:   <span class="str">"User declined to execute this tool."</span>,
+            })
+            <span class="kw">continue</span>
+        }
+
+        <span class="cm">// Execute with timeout</span>
+        wg.<span class="fn">Add</span>(<span class="num">1</span>)
+        <span class="kw">go func</span>(c <span class="type">ToolCall</span>, d *<span class="type">ToolDef</span>) {
+            <span class="kw">defer</span> wg.<span class="fn">Done</span>()
+            toolCtx, cancel := context.<span class="fn">WithTimeout</span>(ctx, <span class="num">30</span>*time.Second)
+            <span class="kw">defer</span> <span class="fn">cancel</span>()
+
+            output, _ := d.Fn.<span class="fn">Execute</span>(toolCtx, c.Arguments)
+            resultChan &lt;- <span class="type">ToolResult</span>{ToolUseID: c.ID, Content: output}
+        }(call, def)
+    }
+
+    wg.<span class="fn">Wait</span>()
+    <span class="fn">close</span>(resultChan)
+    <span class="kw">for</span> r := <span class="kw">range</span> resultChan { results = <span class="fn">append</span>(results, r) }
+
+    <span class="kw">return</span> <span class="type">Message</span>{Role: <span class="str">"user"</span>, Content: results}, <span class="kw">nil</span>
+}</pre>
+
+  <h3>Error Strings, Not Error Values</h3>
+  <p>This is the most counterintuitive thing about tool design. When a tool fails, you should <strong>return the error as a string result</strong>, not as a Go/Python error return value. Why? Because the model needs to read the error. If you propagate it as a Go error up through the stack, the model never sees it and can't adapt its plan. If you return <code>"Search failed: rate limited. Try again in 60 seconds or use cached data."</code> as the tool result, the model can read that and pivot strategy.</p>
+
+  <div class="callout callout-use">
+    <strong>Hermes has 61 tools</strong> built on this exact pattern. Your OpenClaw uses the same approach via the plugin system — each plugin registers its tools and the dispatcher calls them. The only real difference between a 3-tool agent and a 61-tool agent is the size of the registry. The dispatch mechanism is identical.
+  </div>
+
+  <h3>Evaluating Tool Dispatch</h3>
+  <div class="eval-grid">
+    <div class="eval-card green">
+      <div class="label">Working Well</div>
+      Tool schemas are clear enough that the model calls them correctly on the first try (no retry loops due to argument confusion). Tool results are concise but complete — not too long (wastes context) nor too short (model can't use them). Parallel tool calls execute concurrently. Errors return as human-readable strings. Dangerous tools require approval and never auto-execute.
+    </div>
+    <div class="eval-card red">
+      <div class="label">Breaking Down</div>
+      Model consistently calls tools with wrong argument names (schema description is bad). Tool results are raw JSON dumps the model struggles to parse. Tools time out silently. All tool calls run sequentially even when they're independent. A tool with side effects (sending email, writing files) executes without any approval prompt.
+    </div>
+  </div>
+
+  <div id="fail4"></div>
+  <h3>Individual Failure Example: Ambiguous Schema = Wrong Arguments</h3>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ BAD — Vague schema causes the model to guess wrong arguments</div>
+    <div class="scenario-body">
+<pre><span class="cm">// Tool schema with vague descriptions</span>
+{
+    <span class="str">"name"</span>: <span class="str">"write_file"</span>,
+    <span class="str">"description"</span>: <span class="str">"Write to a file"</span>,  <span class="cm">// too vague</span>
+    <span class="str">"parameters"</span>: {
+        <span class="str">"path"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>},      <span class="cm">// no description</span>
+        <span class="str">"data"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>}       <span class="cm">// model doesn't know if relative or absolute</span>
+    }
+}
+
+<span class="cm">// Model calls it as:
+// write_file(path="summary.md", data="...")
+// But the implementation expects absolute paths.
+// File gets written to process CWD, not the vault.
+// Model has no idea. Silently wrong.</span></pre>
+    </div>
+  </div>
+
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — Explicit schema with examples and constraints</div>
+    <div class="scenario-body">
+<pre>{
+    <span class="str">"name"</span>: <span class="str">"write_file"</span>,
+    <span class="str">"description"</span>: <span class="str">"Write content to a file in the agent vault. Use for saving notes, summaries, reports, and any persistent data. Always prefer vault paths."</span>,
+    <span class="str">"parameters"</span>: {
+        <span class="str">"path"</span>: {
+            <span class="str">"type"</span>: <span class="str">"string"</span>,
+            <span class="str">"description"</span>: <span class="str">"Absolute path to the file. Must start with /home/dex/workspace/. Example: /home/dex/workspace/memory/daily-2026-05-04.md"</span>
+        },
+        <span class="str">"content"</span>: {   <span class="cm">// renamed from "data" to "content" — more intuitive</span>
+            <span class="str">"type"</span>: <span class="str">"string"</span>,
+            <span class="str">"description"</span>: <span class="str">"The full text content to write. Overwrites existing file. Use append_file if you want to add to existing content."</span>
+        },
+        <span class="str">"create_dirs"</span>: {
+            <span class="str">"type"</span>: <span class="str">"boolean"</span>,
+            <span class="str">"description"</span>: <span class="str">"Create parent directories if they don't exist. Default: true."</span>,
+            <span class="str">"default"</span>: <span class="kw">true</span>
+        }
+    },
+    <span class="str">"required"</span>: [<span class="str">"path"</span>, <span class="str">"content"</span>]
+}
+<span class="cm">// Now the model knows: absolute paths, vault location, and has a concrete example.</span></pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- PART 5: PERSISTENCE -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="part-header" id="part5">
+    <span class="part-badge badge-p5">PART 5</span>
+    <h2 style="color:var(--p5)">Persistence — The Diary</h2>
+  </div>
+
+  <h3>What It Is</h3>
+  <p>Persistence is the system that <strong>stores what happened</strong> so the next session can pick up where this one left off. Without Persistence, every session starts blank — the LLM's statelessness becomes permanent. Persistence turns a stateless LLM into something that feels stateful. It's the difference between a magic 8-ball and a colleague who knows you.</p>
+
+  <div class="callout callout-analogy">
+    Persistence is a <strong>ship's captain's log</strong>. Every day, the captain records what happened — position, weather, decisions made, course corrections, noteworthy events. The next captain who takes over the ship reads the log and immediately understands the situation. They don't have to rediscover everything from scratch. The log IS the institutional memory. Without it, every captain starts with no context about where the ship has been or why it's on its current heading.
+  </div>
+
+  <h3>The Two Kinds of Memory</h3>
+  <p>Persistence has two fundamentally different jobs:</p>
+
+  <table>
+    <tr><th>Type</th><th>What</th><th>Format</th><th>Read When</th></tr>
+    <tr><td><strong>Conversation History</strong></td><td>The literal messages exchanged in each session</td><td>SQLite rows or JSON files</td><td>Session start (hydration)</td></tr>
+    <tr><td><strong>Long-term Memory</strong></td><td>Distilled facts, preferences, skills about the user/world</td><td>Markdown files or structured DB</td><td>System prompt assembly</td></tr>
+  </table>
+
+  <p>OpenClaw uses <strong>files</strong> for both (your vault). Hermes uses <strong>SQLite + FTS5</strong> for conversation history and markdown files for long-term memory (MEMORY.md, USER.md). Neither approach is objectively better — files win on debuggability, SQLite wins on query power and atomicity.</p>
+
+  <pre><span class="cm">// persistence.go — handles both types of memory</span>
+
+<span class="kw">type</span> <span class="type">PersistenceLayer</span> <span class="kw">struct</span> {
+    db        *sql.<span class="type">DB</span>     <span class="cm">// conversation history</span>
+    vaultPath <span class="type">string</span>     <span class="cm">// long-term memory files</span>
+}
+
+<span class="cm">// ── CONVERSATION HISTORY ─────────────────────────────────────────</span>
+
+<span class="kw">func</span> (p *<span class="type">PersistenceLayer</span>) <span class="fn">SaveTurn</span>(sessionKey <span class="type">string</span>, msg <span class="type">Message</span>) <span class="type">error</span> {
+    tokenCount := <span class="fn">estimateTokens</span>(msg.Content)
+    _, err := p.db.<span class="fn">Exec</span>(<span class="str">`
+        INSERT INTO messages (session_key, role, content, token_count, created_at)
+        VALUES (?, ?, ?, ?, ?)
+    `</span>, sessionKey, msg.Role, msg.Content, tokenCount, time.<span class="fn">Now</span>().Unix())
+    <span class="kw">return</span> err
+}
+
+<span class="kw">func</span> (p *<span class="type">PersistenceLayer</span>) <span class="fn">LoadHistory</span>(sessionKey <span class="type">string</span>, limit <span class="type">int</span>) ([]<span class="type">Message</span>, <span class="type">error</span>) {
+    rows, err := p.db.<span class="fn">Query</span>(<span class="str">`
+        SELECT role, content FROM messages
+        WHERE session_key = ?
+        ORDER BY created_at DESC
+        LIMIT ?
+    `</span>, sessionKey, limit)
+    <span class="kw">if</span> err != <span class="kw">nil</span> { <span class="kw">return</span> <span class="kw">nil</span>, err }
+
+    <span class="kw">var</span> msgs []<span class="type">Message</span>
+    <span class="kw">for</span> rows.<span class="fn">Next</span>() {
+        <span class="kw">var</span> m <span class="type">Message</span>
+        rows.<span class="fn">Scan</span>(&m.Role, &m.Content)
+        msgs = <span class="fn">append</span>(msgs, m)
+    }
+    <span class="cm">// Reverse to chronological</span>
+    <span class="kw">for</span> i, j := <span class="num">0</span>, <span class="fn">len</span>(msgs)-<span class="num">1</span>; i &lt; j; i, j = i+<span class="num">1</span>, j-<span class="num">1</span> {
+        msgs[i], msgs[j] = msgs[j], msgs[i]
+    }
+    <span class="kw">return</span> msgs, <span class="kw">nil</span>
+}
+
+<span class="cm">// ── LONG-TERM MEMORY ─────────────────────────────────────────────</span>
+
+<span class="cm">// UpdateMemory is called by the agent itself as a tool
+// "dex, remember that I prefer BTC price in USD not sats"</span>
+<span class="kw">func</span> (p *<span class="type">PersistenceLayer</span>) <span class="fn">UpdateMemory</span>(userID <span class="type">string</span>, fact <span class="type">string</span>) <span class="type">error</span> {
+    memFile := <span class="fn">filepath.Join</span>(p.vaultPath, <span class="str">"memory"</span>, userID+<span class="str">".md"</span>)
+
+    existing, _ := os.<span class="fn">ReadFile</span>(memFile)
+    updated := <span class="type">string</span>(existing) + <span class="str">"\n- "</span> + fact + <span class="str">" ("</span> + time.<span class="fn">Now</span>().<span class="fn">Format</span>(<span class="str">"2006-01-02"</span>) + <span class="str">")"</span>
+
+    <span class="kw">return</span> os.<span class="fn">WriteFile</span>(memFile, []<span class="type">byte</span>(updated), <span class="num">0644</span>)
+}
+
+<span class="cm">// FTS5 full-text search across all conversations</span>
+<span class="kw">func</span> (p *<span class="type">PersistenceLayer</span>) <span class="fn">SearchMemory</span>(query <span class="type">string</span>) ([]<span class="type">Message</span>, <span class="type">error</span>) {
+    rows, err := p.db.<span class="fn">Query</span>(<span class="str">`
+        SELECT m.role, m.content, m.created_at
+        FROM messages_fts
+        JOIN messages m ON messages_fts.rowid = m.id
+        WHERE messages_fts MATCH ?
+        ORDER BY rank
+        LIMIT 10
+    `</span>, query)
+    <span class="cm">// ... scan and return</span>
+    <span class="kw">return</span> <span class="fn">scanMessages</span>(rows, err)
+}
+
+<span class="cm">// SQLite schema with FTS5</span>
+<span class="kw">const</span> schema = <span class="str">`
+CREATE TABLE IF NOT EXISTS messages (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    session_key TEXT NOT NULL,        -- "discord:channel_id" or "tg:chat_id"
+    role        TEXT NOT NULL,        -- "user" | "assistant" | "tool"
+    content     TEXT NOT NULL,
+    token_count INTEGER,
+    created_at  INTEGER               -- unix timestamp
+);
+CREATE INDEX IF NOT EXISTS idx_session ON messages(session_key, created_at);
+
+-- Full-text search index
+CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(
+    content,
+    content=messages,
+    content_rowid=id
+);
+`</span></pre>
+
+  <div class="callout callout-use">
+    <strong>Your OpenClaw vault structure</strong> is a file-based implementation of this same pattern. <code>memory/dan.md</code> is your UserMemory. Per-channel history files are your conversation history. The trade-off you made (files over SQLite) gives you instant Obsidian readability and git diff visibility at the cost of no full-text search and no atomic multi-row transactions. That's a completely reasonable trade-off for your scale.
+  </div>
+
+  <h3>Evaluating Persistence</h3>
+  <div class="eval-grid">
+    <div class="eval-card green">
+      <div class="label">Working Well</div>
+      Agent references facts from past sessions accurately and without prompting. Write operations are atomic — partial writes don't corrupt history. Read latency is under 50ms. Token counts are tracked per message. Memory files are structured and human-readable. The system survives a crash — incomplete sessions don't cause corruption.
+    </div>
+    <div class="eval-card red">
+      <div class="label">Breaking Down</div>
+      Agent forgets things said 2+ sessions ago. A crash mid-session corrupts conversation history. Read times are slow (&gt;500ms) on long sessions. Memory grows without bound (no archiving strategy). Two concurrent sessions write to the same file simultaneously and corrupt it (race condition).
+    </div>
+  </div>
+
+  <div id="fail5"></div>
+  <h3>Individual Failure Example: Race Condition on Concurrent Sessions</h3>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ BAD — Two cron jobs write to same memory file simultaneously</div>
+    <div class="scenario-body">
+<pre><span class="cm">// Cron job A and Cron job B both fire at midnight.
+// Both read memory.md, append their findings, write back.
+// Whoever writes last wins. The other's changes are lost.</span>
+
+<span class="kw">func</span> <span class="fn">appendToMemory</span>(path <span class="type">string</span>, fact <span class="type">string</span>) {
+    content, _ := os.<span class="fn">ReadFile</span>(path)          <span class="cm">// Job A reads: "fact1\n"</span>
+                                               <span class="cm">// Job B reads: "fact1\n"</span>
+    content = <span class="fn">append</span>(content, fact...)        <span class="cm">// Job A: "fact1\nfact-A"</span>
+                                               <span class="cm">// Job B: "fact1\nfact-B"</span>
+    os.<span class="fn">WriteFile</span>(path, content, <span class="num">0644</span>)         <span class="cm">// Job A writes. Job B writes over it.</span>
+}                                              <span class="cm">// fact-A is lost forever</span></pre>
+    </div>
+  </div>
+
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — File lock + atomic rename pattern</div>
+    <div class="scenario-body">
+<pre><span class="kw">import</span> <span class="str">"github.com/gofrs/flock"</span>
+
+<span class="kw">func</span> <span class="fn">appendToMemory</span>(path <span class="type">string</span>, fact <span class="type">string</span>) <span class="type">error</span> {
+    lock := flock.<span class="fn">New</span>(path + <span class="str">".lock"</span>)
+
+    <span class="cm">// Acquire exclusive lock (blocks until available)</span>
+    locked, err := lock.<span class="fn">TryLockContext</span>(context.<span class="fn">Background</span>(), <span class="num">5</span>*time.Second)
+    <span class="kw">if</span> err != <span class="kw">nil</span> || !locked {
+        <span class="kw">return</span> <span class="fn">fmt.Errorf</span>(<span class="str">"could not acquire lock: %v"</span>, err)
+    }
+    <span class="kw">defer</span> lock.<span class="fn">Unlock</span>()
+
+    <span class="cm">// Read → modify → write to temp file → atomic rename</span>
+    content, _ := os.<span class="fn">ReadFile</span>(path)
+    content = <span class="fn">append</span>(content, []<span class="type">byte</span>(<span class="str">"\n- "</span>+fact)...)
+
+    tmpPath := path + <span class="str">".tmp"</span>
+    <span class="kw">if</span> err := os.<span class="fn">WriteFile</span>(tmpPath, content, <span class="num">0644</span>); err != <span class="kw">nil</span> {
+        <span class="kw">return</span> err
+    }
+    <span class="cm">// Atomic rename — on Linux this is guaranteed atomic</span>
+    <span class="kw">return</span> os.<span class="fn">Rename</span>(tmpPath, path)
+}</pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- OVERLAP ZONES -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="divider"></div>
+  <h2 id="overlap">Overlap Zones — Where Parts Blur</h2>
+
+  <p>The 5-part model is a conceptual frame, not a rigid boundary. In real systems, responsibilities bleed at the edges. These are the three main overlap zones:</p>
+
+  <div class="overlap-zone">
+    <div class="zone-label">OVERLAP 1: Session Hydration ↔ Persistence</div>
+    <p><strong>The blur:</strong> Session Hydration loads data from Persistence. They're tightly coupled. In many codebases, they're the same class. The distinction is conceptual — Hydration is the "read + assemble" operation, Persistence is the "write + store" operation. Keep them logically separate even if they share a DB handle.</p>
+    <p><strong>The risk:</strong> If Hydration also writes (e.g., "mark session as started"), you create a situation where a session is marked open but the agent loop never runs. Writes should go through Persistence only, after the loop completes.</p>
+  </div>
+
+  <div class="overlap-zone">
+    <div class="zone-label">OVERLAP 2: Agent Loop ↔ Tool Dispatch</div>
+    <p><strong>The blur:</strong> The agent loop decides what tool to call. Tool Dispatch executes it. But <em>who decides what tools are available?</em> The agent loop sends tool schemas to the LLM. Where do those schemas come from? The registry, which is owned by Tool Dispatch. This creates a coupling — the loop needs to ask Dispatch what's available before it can call the LLM.</p>
+    <p><strong>The risk:</strong> Putting tool execution logic inside the agent loop function (common in quick prototypes). This makes testing impossible — you can't test the agent loop without mocking tool execution.</p>
+  </div>
+
+  <div class="overlap-zone">
+    <div class="zone-label">OVERLAP 3: Platform Input ↔ Session Hydration</div>
+    <p><strong>The blur:</strong> Platform Input provides the <code>ChannelID</code> that Session Hydration uses to look up history. But should Platform Input know about sessions? In some systems, the adapter itself checks "does this channel have an active session?" before routing the message. This is authorization bleeding into session management.</p>
+    <p><strong>The risk:</strong> Platform-specific logic (Discord's rate limits, Telegram's retry behavior) leaking into session logic. Keep the adapter dumb — it converts events and checks allowlists, nothing more.</p>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- POOR COORDINATION EXAMPLE -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <h2 id="poor-coord">Poor Coordination — A Full System Failure</h2>
+
+  <p>Here is a realistic scenario where all 5 parts are individually functional but poorly coordinated, causing a cascading failure:</p>
+
+  <div class="scenario scenario-bad">
+    <div class="scenario-header">✗ SCENARIO — "Dex, write my daily market summary and post it to #feed"</div>
+    <div class="scenario-body">
+      <p><strong>What should happen:</strong> Dex searches for market data, writes a summary, posts to #feed channel. Simple 3-step task.</p>
+
+      <p><strong>What actually happens:</strong></p>
+      <ol>
+        <li><strong>[Platform Input]</strong> receives the Discord message. It also fires a <em>second</em> event because Discord resent the message (no dedup). Two copies of the same message enter the pipeline.</li>
+        <li><strong>[Session Hydration]</strong> runs twice, both load the same session history. Both create HydratedSession objects. Race to the agent loop.</li>
+        <li><strong>[Agent Loop]</strong> runs twice in parallel (no per-channel mutex). Both instances call <code>web_search</code> simultaneously.</li>
+        <li><strong>[Tool Dispatch]</strong> executes both. Both calls succeed. Both agent loops get market data. Both decide to write the summary.</li>
+        <li><strong>[Persistence]</strong> two concurrent writes to <code>market-summary.md</code>. One corrupts the other. File ends up with interleaved content from both writes.</li>
+        <li>Both agent loops then call <code>discord_send</code> to post to #feed. Two identical market summaries are posted.</li>
+        <li><strong>[Persistence]</strong> both loops try to save their conversation history. Second write corrupts first. History now has duplicate entries out of order.</li>
+      </ol>
+
+<pre><span class="cm">// The fundamental problem: no per-channel mutex
+// All 5 parts are functional in isolation. Coordination is the failure.</span>
+
+<span class="cm">// Gateway receives message</span>
+<span class="kw">func</span> (g *<span class="type">Gateway</span>) <span class="fn">handleMessage</span>(msg <span class="type">IncomingMessage</span>) {
+    <span class="cm">// ⚠ No deduplication on input</span>
+    <span class="cm">// ⚠ No per-channel lock</span>
+    <span class="cm">// ⚠ Fires a new goroutine per message without coordination</span>
+    <span class="kw">go func</span>() {
+        session, _ := hydrator.<span class="fn">Hydrate</span>(msg)
+        result, _ := agentLoop.<span class="fn">Run</span>(ctx, session)
+        persistence.<span class="fn">Save</span>(msg.ChannelID, result)
+        platform.<span class="fn">Send</span>(msg.ChannelID, result.Text)
+    }()
+}</pre>
+    </div>
+  </div>
+
+  <div id="good-coord"></div>
+  <div class="scenario scenario-good">
+    <div class="scenario-header">✓ FIXED — Coordination added at each seam</div>
+    <div class="scenario-body">
+<pre><span class="kw">type</span> <span class="type">Gateway</span> <span class="kw">struct</span> {
+    channelLocks *<span class="type">sync.Map</span>  <span class="cm">// one mutex per channel</span>
+    seenMessages *<span class="type">sync.Map</span>  <span class="cm">// deduplication</span>
+}
+
+<span class="kw">func</span> (g *<span class="type">Gateway</span>) <span class="fn">handleMessage</span>(msg <span class="type">IncomingMessage</span>) {
+    <span class="cm">// ① Platform Input: deduplication</span>
+    msgKey := msg.Platform + <span class="str">":"</span> + msg.MessageID
+    <span class="kw">if</span> _, exists := g.seenMessages.<span class="fn">LoadOrStore</span>(msgKey, time.<span class="fn">Now</span>()); exists {
+        <span class="kw">return</span>  <span class="cm">// duplicate — drop it</span>
+    }
+
+    <span class="cm">// ② Per-channel mutex — serialize all messages for the same channel</span>
+    lockVal, _ := g.channelLocks.<span class="fn">LoadOrStore</span>(msg.ChannelID, &sync.Mutex{})
+    mu := lockVal.(*sync.Mutex)
+    mu.<span class="fn">Lock</span>()
+    <span class="kw">defer</span> mu.<span class="fn">Unlock</span>()
+
+    <span class="cm">// Now only ONE goroutine per channel runs at a time</span>
+    <span class="kw">go func</span>() {
+        <span class="cm">// ③ Session Hydration — now safe, no race</span>
+        session, err := hydrator.<span class="fn">Hydrate</span>(msg)
+        <span class="kw">if</span> err != <span class="kw">nil</span> { log.<span class="fn">Error</span>(err); <span class="kw">return</span> }
+
+        <span class="cm">// Show typing indicator — user knows something is happening</span>
+        platform.<span class="fn">SendTyping</span>(msg.ChannelID)
+
+        <span class="cm">// ④ Agent Loop — single execution per channel</span>
+        result, err := agentLoop.<span class="fn">Run</span>(ctx, session)
+        <span class="kw">if</span> err != <span class="kw">nil</span> {
+            platform.<span class="fn">Send</span>(msg.ChannelID, <span class="str">"Sorry, I hit an error: "</span>+err.<span class="fn">Error</span>())
+            <span class="kw">return</span>
+        }
+
+        <span class="cm">// ⑤ Persistence — atomic write, then respond</span>
+        <span class="kw">if</span> err := persistence.<span class="fn">SaveResult</span>(msg.ChannelID, session.Messages, result); err != <span class="kw">nil</span> {
+            log.<span class="fn">Error</span>(<span class="str">"persistence failed:"</span>, err)
+            <span class="cm">// Still send response — don't block user because of storage error</span>
+        }
+
+        <span class="cm">// Send response only after persistence succeeds (or we logged the failure)</span>
+        platform.<span class="fn">Send</span>(msg.ChannelID, result.Text)
+    }()
+}
+
+<span class="cm">// Key design decisions:
+// 1. Dedup before ANY work is done (Input layer)
+// 2. Per-channel mutex ensures serialized execution (not global lock)
+// 3. Persist THEN respond — if save fails, we still send the response
+// 4. Log persistence failures without blocking — user experience > storage consistency
+// 5. Each concern handled by the right layer, in the right order</span></pre>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <!-- CLOSING -->
+  <!-- ════════════════════════════════════════════════════════════════ -->
+  <div class="divider"></div>
+
+  <h2>The Mental Model to Keep</h2>
+
+  <p>Every time something goes wrong in an agent system, ask: <strong>which of the 5 parts failed?</strong></p>
+
+  <table>
+    <tr><th>Symptom</th><th>Likely Culprit</th></tr>
+    <tr><td>Agent responds twice to one message</td><td>Platform Input — no deduplication</td></tr>
+    <tr><td>Agent forgot what you said last session</td><td>Session Hydration — history not loading</td></tr>
+    <tr><td>Agent loops forever / burns tokens</td><td>Agent Loop — no maxTurns or bad circuit breaker</td></tr>
+    <tr><td>Tool called with wrong arguments</td><td>Tool Dispatch — schema too vague</td></tr>
+    <tr><td>Memory file corrupted after cron</td><td>Persistence — no file lock / atomic write</td></tr>
+    <tr><td>Two messages arrive at once, history breaks</td><td>Coordination — no per-channel mutex</td></tr>
+    <tr><td>Responses slow (3-5 second delay)</td><td>Session Hydration or Tool Dispatch — check DB query time and tool timeout</td></tr>
+    <tr><td>Agent does the right thing but can't remember it</td><td>Persistence — results not being saved correctly</td></tr>
+  </table>
+
+  <p style="margin-top:32px;color:var(--text-dim);font-size:13px;font-family:'JetBrains Mono',monospace;">
+    // The machine is simple. The failure modes are predictable. Debug the layer, not the vibe.
+  </p>
+
+</main>
+</body>
+</html>
