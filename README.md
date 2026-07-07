@@ -1,6 +1,6 @@
-# Hermes Agent and OpenClaw Runtime Code Map
+# The 5-Part Agent Machine Loop with Tools
 
-A single-page, self-contained comparison of how two production agent runtimes implement the same five-part machine:
+A single-page, self-contained explainer of how two production agent runtimes implement the same five-part tool-using machine:
 
 - [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — Python gateway, `AIAgent`, SQLite session storage
 - [openclaw/openclaw](https://github.com/openclaw/openclaw) — TypeScript packages, `CoreAgentHarness`, JSONL session tree
@@ -9,15 +9,15 @@ Each section maps a standard agent runtime model to real source files and public
 
 ## Runtime Model
 
-Every tool-using agent tends to follow the same shape:
+Every tool-using agent tends to follow the same machine loop:
 
 ```text
 Inbound event
-  -> platform/session identity
-  -> hydrated prompt + message history
-  -> agent loop
-  -> tool dispatch
-  -> persisted transcript / memory
+  -> 1. platform input
+  -> 2. session hydration
+  -> 3. agent loop
+  -> 4. tool dispatch
+  -> 5. persistence
   -> outbound response
 ```
 
@@ -38,6 +38,7 @@ This page walks that pipeline side by side in Hermes and OpenClaw.
 - **Source anchors** — entry-point files in each repo for each runtime part
 - **Side-by-side code maps** — Hermes Python vs OpenClaw TypeScript for all five parts
 - **Coordination summary** — comparison table plus the main architectural difference (monolithic Python runtime vs factored TypeScript packages)
+- **Agent mode exports** — `llms.txt` and `agent-runtime-map.json` for agent-readable summaries
 - **Sticky sidebar navigation** with jump links to each section
 - **Dark and light themes** with preference saved in `localStorage`
 - **Responsive layout** for smaller screens
@@ -70,6 +71,8 @@ Fonts are loaded from Google Fonts, so an internet connection gives the intended
 
 ```text
 agent-machine-deep-dive/
-├── index.html    # Complete comparison page (markup, styles, content)
+├── agent-runtime-map.json # Machine-readable runtime map
+├── index.html             # Complete comparison page (markup, styles, content)
+├── llms.txt               # Agent-readable text summary
 └── README.md
 ```

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Hermes Agent and OpenClaw - Agent Runtime Code Map</title>
+<title>The 5-Part Agent Machine Loop with Tools</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Syne:wght@600;700;800&family=Inter:wght@400;500;600&display=swap');
 
@@ -26,21 +26,99 @@
   }
 
   body[data-theme="light"] {
-    --bg: #f7f9fc;
-    --nav: #eef3f8;
+    --bg: #e8edf4;
+    --nav: #dde5ef;
     --panel: #ffffff;
-    --panel2: #f4f7fb;
-    --border: #d8e1ec;
-    --border2: #c3cfdd;
-    --text: #263244;
-    --muted: #607089;
-    --bright: #111827;
-    --blue: #2563eb;
-    --cyan: #047b96;
-    --violet: #7c3aed;
-    --green: #047857;
+    --panel2: #f3f6fa;
+    --border: #b8c5d6;
+    --border2: #9aadc4;
+    --text: #1a2332;
+    --muted: #475569;
+    --bright: #0b1220;
+    --blue: #1d4ed8;
+    --cyan: #0e7490;
+    --violet: #6d28d9;
+    --green: #145214;
     --amber: #b45309;
     --red: #be123c;
+  }
+
+  body[data-theme="light"] nav {
+    box-shadow: 1px 0 0 var(--border2);
+  }
+  body[data-theme="light"] .logo,
+  body[data-theme="light"] .eyebrow {
+    color: var(--green);
+  }
+  body[data-theme="light"] nav a:hover {
+    color: var(--bright);
+    border-left-color: var(--green);
+  }
+  body[data-theme="light"] .top-actions,
+  body[data-theme="light"] .hero,
+  body[data-theme="light"] .map-card,
+  body[data-theme="light"] .source-card,
+  body[data-theme="light"] .callout {
+    border-color: var(--border2);
+    box-shadow:
+      0 1px 2px rgba(15, 23, 42, 0.05),
+      0 10px 28px rgba(15, 23, 42, 0.07);
+  }
+  body[data-theme="light"] .pipeline-step {
+    background: #ffffff;
+    border-color: var(--border2);
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+  }
+  body[data-theme="light"] .pipeline-step:not(:last-child)::after,
+  body[data-theme="light"] .pipeline-step .num {
+    color: var(--green);
+  }
+  body[data-theme="light"] .flow-rail {
+    color: var(--muted);
+    font-weight: 700;
+  }
+  body[data-theme="light"] .flow-rail::before,
+  body[data-theme="light"] .flow-rail::after {
+    background: var(--border2);
+  }
+  body[data-theme="light"] p code,
+  body[data-theme="light"] li code {
+    border-color: rgba(20, 82, 20, 0.22);
+    background: rgba(20, 82, 20, 0.08);
+    color: #0a320a;
+  }
+  body[data-theme="light"] a {
+    color: var(--cyan);
+    font-weight: 500;
+  }
+  body[data-theme="light"] a:hover {
+    color: var(--green);
+  }
+  body[data-theme="light"] .agent-mode a:hover {
+    border-color: var(--green);
+    color: var(--green);
+  }
+  body[data-theme="light"] .theme-toggle button:hover,
+  body[data-theme="light"] .theme-toggle button[aria-pressed="true"] {
+    color: var(--green);
+    border-color: var(--green);
+    background: rgba(20, 82, 20, 0.06);
+  }
+  body[data-theme="light"] .part {
+    border-top-color: var(--border2);
+  }
+  body[data-theme="light"] .callout {
+    background: #fffbeb;
+    border-left-color: var(--amber);
+  }
+  body[data-theme="light"] .runtime-lines {
+    border-top-color: var(--border2);
+  }
+  body[data-theme="light"] .runtime-lines span:first-child {
+    color: var(--green);
+  }
+  body[data-theme="light"] th {
+    color: var(--muted);
   }
 
   * { box-sizing: border-box; }
@@ -52,6 +130,64 @@
     background: var(--bg);
     color: var(--text);
     font: 15px/1.65 Inter, system-ui, sans-serif;
+  }
+
+  .top-actions {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: min(520px, 100%);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    box-shadow: 0 12px 28px rgba(0,0,0,.16);
+  }
+  .agent-mode {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding-right: 8px;
+    border-right: 1px solid var(--border);
+  }
+  .agent-mode-label {
+    color: var(--muted);
+    font: 700 10px "JetBrains Mono", monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+  }
+  .agent-mode a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--panel2);
+    color: var(--bright);
+    text-decoration: none;
+    font: 700 11px "JetBrains Mono", monospace;
+  }
+  .agent-mode a:hover {
+    border-color: var(--cyan);
+    color: var(--cyan);
+  }
+  .display-mode {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .display-mode-label {
+    color: var(--muted);
+    font: 700 10px "JetBrains Mono", monospace;
+    letter-spacing: .08em;
+    text-transform: uppercase;
   }
 
   nav {
@@ -93,7 +229,6 @@
   .theme-toggle {
     display: flex;
     gap: 8px;
-    padding: 8px 20px 14px;
   }
   .theme-toggle button {
     width: 34px;
@@ -112,8 +247,16 @@
   }
 
   main {
+    position: relative;
+    flex: 1;
     width: min(1180px, calc(100vw - 250px));
     padding: 48px 56px 96px;
+  }
+  .page-header {
+    position: relative;
+    margin-bottom: 8px;
+    padding-right: min(540px, 48%);
+    min-height: 44px;
   }
   h1, h2, h3 {
     color: var(--bright);
@@ -151,9 +294,81 @@
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
-    overflow-x: auto;
+    overflow: hidden;
   }
-  .hero pre { margin: 0; background: transparent; border: 0; padding: 0; }
+  .pipeline {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(118px, 1fr));
+    gap: 10px;
+    margin: 12px 0 18px;
+  }
+  .flow-rail {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font: 700 11px "JetBrains Mono", monospace;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .flow-rail::before,
+  .flow-rail::after {
+    content: "";
+    height: 1px;
+    flex: 1;
+    background: var(--border);
+  }
+  .pipeline-step {
+    min-height: 88px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel2);
+    position: relative;
+  }
+  .pipeline-step:not(:last-child)::after {
+    content: "->";
+    position: absolute;
+    top: 50%;
+    right: -12px;
+    transform: translateY(-50%);
+    color: var(--cyan);
+    font: 700 13px "JetBrains Mono", monospace;
+    z-index: 1;
+  }
+  .pipeline-step .num {
+    color: var(--cyan);
+    font: 700 10px "JetBrains Mono", monospace;
+    letter-spacing: .08em;
+  }
+  .pipeline-step .label {
+    display: block;
+    margin-top: 7px;
+    color: var(--bright);
+    font-weight: 700;
+    line-height: 1.25;
+  }
+  .pipeline-step .detail {
+    display: block;
+    margin-top: 6px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.35;
+  }
+  .runtime-lines {
+    display: grid;
+    gap: 8px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font: 700 12px/1.55 "JetBrains Mono", monospace;
+  }
+  .runtime-lines div {
+    display: grid;
+    grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
+  }
+  .runtime-lines span:first-child { color: var(--bright); }
+  .runtime-lines span:last-child { color: var(--muted); }
 
   .part {
     margin-top: 54px;
@@ -184,31 +399,91 @@
 
   .code-card {
     min-width: 0;
-    border: 1px solid var(--border);
+    border: 1px solid var(--snippet-border, var(--border));
     border-radius: 8px;
-    background: var(--panel2);
+    background: var(--snippet-bg, var(--panel2));
     overflow: hidden;
+    box-shadow: 0 12px 28px rgba(0,0,0,.14);
+  }
+  .code-card.hermes {
+    --snippet-bg: #051005;
+    --snippet-fg: #e8f5ea;
+    --snippet-border: #124012;
+    --snippet-title-bg: #082808;
+    --snippet-title-fg: #ffffff;
+    --snippet-title-meta: #8fb996;
+    --snippet-accent: #145214;
+  }
+  .code-card.openclaw {
+    --snippet-bg: #050505;
+    --snippet-fg: #fff8f8;
+    --snippet-border: #a31d2a;
+    --snippet-title-bg: #1a0507;
+    --snippet-title-fg: #ffffff;
+    --snippet-title-meta: #fecaca;
+    --snippet-accent: #ef4444;
+  }
+  body[data-theme="light"] .code-card {
+    box-shadow: 0 6px 22px rgba(15, 23, 42, 0.1);
+  }
+  body[data-theme="light"] .code-card.hermes {
+    --snippet-bg: #c8dcc8;
+    --snippet-fg: #031808;
+    --snippet-border: #0a320a;
+    --snippet-title-bg: #082808;
+    --snippet-title-fg: #ffffff;
+    --snippet-title-meta: #a8cdb0;
+    --snippet-accent: #145214;
+  }
+  body[data-theme="light"] .code-card.openclaw {
+    --snippet-bg: #fff1f1;
+    --snippet-fg: #090909;
+    --snippet-border: #991b1b;
+    --snippet-title-bg: #090909;
+    --snippet-title-fg: #ffffff;
+    --snippet-title-meta: #fca5a5;
+    --snippet-accent: #b91c1c;
   }
   .code-title {
     display: flex;
     justify-content: space-between;
     gap: 12px;
     padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-    color: var(--bright);
+    border-bottom: 1px solid var(--snippet-border, var(--border));
+    background: var(--snippet-title-bg, transparent);
+    color: var(--snippet-title-fg, var(--bright));
     font: 700 11px "JetBrains Mono", monospace;
     letter-spacing: .04em;
     text-transform: uppercase;
   }
-  .code-title span:last-child { color: var(--muted); text-transform: none; letter-spacing: 0; font-weight: 600; }
+  .code-title span:first-child {
+    color: var(--snippet-title-fg, var(--bright));
+  }
+  .code-title span:first-child::before {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 8px;
+    border-radius: 999px;
+    background: var(--snippet-accent, var(--cyan));
+    vertical-align: 1px;
+  }
+  .code-title span:last-child {
+    color: var(--snippet-title-meta, var(--muted));
+    text-transform: none;
+    letter-spacing: 0;
+    font-weight: 600;
+  }
   pre {
     margin: 0;
     padding: 16px;
     overflow-x: auto;
-    color: #dbeafe;
+    color: var(--snippet-fg, #dbeafe);
     font: 12.5px/1.62 "JetBrains Mono", monospace;
     tab-size: 2;
   }
+  pre code { color: inherit; }
   .note {
     margin: 14px 0 0;
     color: var(--muted);
@@ -238,6 +513,22 @@
 
   @media (max-width: 900px) {
     body { display: block; }
+    .page-header {
+      padding-right: 0;
+      padding-top: 52px;
+      min-height: 0;
+    }
+    .top-actions {
+      gap: 8px;
+      padding: 6px;
+    }
+    .agent-mode {
+      padding-right: 6px;
+    }
+    .agent-mode-label,
+    .display-mode-label {
+      display: none;
+    }
     nav {
       position: static;
       width: auto;
@@ -248,17 +539,21 @@
     }
     main { width: 100%; padding: 32px 20px 72px; }
     .map-grid, .code-pair, .source-grid { grid-template-columns: 1fr; }
+    .pipeline { grid-template-columns: 1fr; }
+    .pipeline-step { min-height: auto; }
+    .pipeline-step:not(:last-child)::after {
+      content: "v";
+      top: auto;
+      right: 16px;
+      bottom: -16px;
+      transform: none;
+    }
   }
 </style>
 </head>
 <body>
 <nav>
-  <div class="logo">Agent Runtime<br>Code Map</div>
-  <div class="nav-section">Display</div>
-  <div class="theme-toggle" role="group" aria-label="Color mode">
-    <button type="button" data-theme-choice="dark" aria-label="Use night mode" title="Night mode" aria-pressed="true">☾</button>
-    <button type="button" data-theme-choice="light" aria-label="Use day mode" title="Day mode" aria-pressed="false">☀</button>
-  </div>
+  <div class="logo">5-Part Machine<br>Loop + Tools</div>
   <div class="nav-section">Overview</div>
   <a href="#overview">Runtime Model</a>
   <a href="#sources">Source Anchors</a>
@@ -273,24 +568,63 @@
 </nav>
 
 <main>
-  <h1>Hermes Agent and OpenClaw: A Standard Agent Runtime Explainer</h1>
-  <p class="subtitle">// A source-based map of how two production agent runtimes receive, hydrate, reason, act, and persist.</p>
+  <header class="page-header">
+    <div class="top-actions" aria-label="Page tools">
+      <div class="agent-mode" aria-label="Agent-readable exports">
+        <span class="agent-mode-label">Agent mode</span>
+        <a href="llms.txt" title="Open llms.txt">llms.txt</a>
+        <a href="agent-runtime-map.json" title="Open JSON runtime map">.json</a>
+      </div>
+      <div class="display-mode">
+        <span class="display-mode-label">Display</span>
+        <div class="theme-toggle" role="group" aria-label="Color mode">
+          <button type="button" data-theme-choice="dark" aria-label="Use night mode" title="Night mode" aria-pressed="true">☾</button>
+          <button type="button" data-theme-choice="light" aria-label="Use day mode" title="Day mode" aria-pressed="false">☀</button>
+        </div>
+      </div>
+    </div>
+    <h1>The 5-Part Agent Machine Loop with Tools</h1>
+    <p class="subtitle">// Platform input -> session hydration -> agent loop -> tool dispatch -> persistence.</p>
+  </header>
 
   <p id="overview">Modern tool-using agents tend to converge on the same runtime shape. A platform event is normalized into a session, prior state is assembled into model context, the model runs a loop, tool calls are dispatched, and the resulting transcript is persisted for the next turn. This page uses <strong>NousResearch/hermes-agent</strong> and <strong>openclaw/openclaw</strong> as concrete implementations of that standard pattern.</p>
 
   <p>The examples are intentionally compact. They are source-shaped excerpts and reconstructions that preserve the real filenames, public class/function names, and data flow while leaving out surrounding product code, error branches, and provider-specific details.</p>
 
-  <div class="hero">
-<pre>Inbound event
-  -> platform/session identity
-  -> hydrated prompt + message history
-  -> agent loop
-  -> tool dispatch
-  -> persisted transcript / memory
-  -> outbound response
-
-Hermes:   Python gateway + AIAgent + tools.registry + SQLite session DB
-OpenClaw: TypeScript ACP/session layer + CoreAgentHarness + agentLoop + JSONL session tree</pre>
+  <div class="hero" aria-label="Five-part agent runtime pipeline">
+    <div class="flow-rail">Inbound event</div>
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <span class="num">01</span>
+        <span class="label">Platform input</span>
+        <span class="detail">platform/session identity</span>
+      </div>
+      <div class="pipeline-step">
+        <span class="num">02</span>
+        <span class="label">Session hydration</span>
+        <span class="detail">prompt + message history</span>
+      </div>
+      <div class="pipeline-step">
+        <span class="num">03</span>
+        <span class="label">Agent loop</span>
+        <span class="detail">reasoning turn + stop policy</span>
+      </div>
+      <div class="pipeline-step">
+        <span class="num">04</span>
+        <span class="label">Tool dispatch</span>
+        <span class="detail">schema, policy, execution</span>
+      </div>
+      <div class="pipeline-step">
+        <span class="num">05</span>
+        <span class="label">Persistence</span>
+        <span class="detail">transcript / memory</span>
+      </div>
+    </div>
+    <div class="flow-rail">Outbound response</div>
+    <div class="runtime-lines">
+      <div><span>Hermes:</span><span>Python gateway + AIAgent + tools.registry + SQLite session DB</span></div>
+      <div><span>OpenClaw:</span><span>TypeScript ACP/session layer + CoreAgentHarness + agentLoop + JSONL session tree</span></div>
+    </div>
   </div>
 
   <div class="map-grid">
@@ -334,7 +668,7 @@ OpenClaw: TypeScript ACP/session layer + CoreAgentHarness + agentLoop + JSONL se
     <p>Hermes has direct messaging adapters. OpenClaw exposes runtime/session contracts that let platform clients deliver turns through stable handles. Both normalize an external event into a session identity before the model sees anything.</p>
 
     <div class="code-pair">
-      <div class="code-card">
+      <div class="code-card hermes">
         <div class="code-title"><span>Hermes Python</span><span>gateway/session.py, gateway/platforms/base.py</span></div>
 <pre><code>@dataclass
 class SessionSource:
@@ -371,7 +705,7 @@ class BasePlatformAdapter(ABC):
     async def send(self, chat_id: str, text: str, metadata=None) -&gt; None: ...</code></pre>
       </div>
 
-      <div class="code-card">
+      <div class="code-card openclaw">
         <div class="code-title"><span>OpenClaw TypeScript</span><span>packages/acp-core/src/runtime/types.ts, session.ts</span></div>
 <pre><code>export type AcpRuntimeHandle = {
   sessionKey: string;
@@ -419,7 +753,7 @@ export function createInMemorySessionStore(): AcpSessionStore {
     <p>Hydration is where prior state becomes model-visible context. Hermes passes prior conversation history into <code>run_conversation</code> and can compress context. OpenClaw makes this explicit: <code>Session.buildContext()</code> walks the active session branch and injects compaction summaries before recent messages.</p>
 
     <div class="code-pair">
-      <div class="code-card">
+      <div class="code-card hermes">
         <div class="code-title"><span>Hermes Python</span><span>run_agent.py</span></div>
 <pre><code>class AIAgent:
     def run_conversation(
@@ -453,7 +787,7 @@ export function createInMemorySessionStore(): AcpSessionStore {
         )</code></pre>
       </div>
 
-      <div class="code-card">
+      <div class="code-card openclaw">
         <div class="code-title"><span>OpenClaw TypeScript</span><span>packages/agent-core/src/harness/session/session.ts</span></div>
 <pre><code>export function buildSessionContext(pathEntries: SessionTreeEntry[]): SessionContext {
   let compaction: CompactionEntry | null = null;
@@ -511,7 +845,7 @@ export class Session {
     <p>The loop is the think/act cycle. Hermes counts API calls against <code>agent.max_iterations</code> and forwards assistant tool calls to the executor. OpenClaw's <code>runLoop</code> continues while tool calls or steering messages exist, then emits <code>agent_end</code>.</p>
 
     <div class="code-pair">
-      <div class="code-card">
+      <div class="code-card hermes">
         <div class="code-title"><span>Hermes Python</span><span>agent/conversation_loop.py, run_agent.py</span></div>
 <pre><code>def run_conversation(agent, user_message, system_message=None,
                      conversation_history=None, task_id=None, *args, **kwargs):
@@ -542,7 +876,7 @@ export class Session {
     return agent._handle_max_iterations(messages, api_call_count)</code></pre>
       </div>
 
-      <div class="code-card">
+      <div class="code-card openclaw">
         <div class="code-title"><span>OpenClaw TypeScript</span><span>packages/agent-core/src/agent-loop.ts</span></div>
 <pre><code>async function runLoop(
   initialContext: AgentContext,
@@ -598,7 +932,7 @@ export class Session {
     <p>Both projects keep schemas and execution separate from the LLM loop. Hermes uses a singleton registry populated by top-level <code>registry.register()</code> calls. OpenClaw resolves tool calls from the current context, validates/blocks them through hooks, and runs sequentially or in parallel depending on policy.</p>
 
     <div class="code-pair">
-      <div class="code-card">
+      <div class="code-card hermes">
         <div class="code-title"><span>Hermes Python</span><span>tools/registry.py, tools/memory_tool.py</span></div>
 <pre><code>class ToolRegistry:
     def __init__(self):
@@ -620,13 +954,15 @@ export class Session {
             )
 
     def get_definitions(self, tool_names: Set[str]) -&gt; List[dict]:
-        return [
-            {"type": "function", "function": {**entry.schema, "name": entry.name}}
-            for entry in self._snapshot_entries()
-        if entry.name in tool_names and (
-            not entry.check_fn or _check_fn_cached(entry.check_fn)
-        )
-        ]
+        definitions = []
+        for entry in self._snapshot_entries():
+            if entry.name not in tool_names:
+                continue
+            if entry.check_fn and not _check_fn_cached(entry.check_fn):
+                continue
+            schema = {**entry.schema, "name": entry.name}
+            definitions.append({"type": "function", "function": schema})
+        return definitions
 
     def dispatch(self, name: str, args: dict, **kwargs) -&gt; str:
         entry = self.get_entry(name)
@@ -646,7 +982,7 @@ registry.register(
 )</code></pre>
       </div>
 
-      <div class="code-card">
+      <div class="code-card openclaw">
         <div class="code-title"><span>OpenClaw TypeScript</span><span>packages/agent-core/src/agent-loop.ts, agent-harness.ts</span></div>
 <pre><code>async function executeToolCalls(
   currentContext: AgentContext,
@@ -705,7 +1041,7 @@ function createLoopConfig(): AgentLoopConfig {
     <p>Hermes writes both a session log and SQLite rows, marking message dictionaries after flush so multiple exit paths do not duplicate rows. OpenClaw records append-only session tree entries to JSONL and rebuilds context by walking the branch.</p>
 
     <div class="code-pair">
-      <div class="code-card">
+      <div class="code-card hermes">
         <div class="code-title"><span>Hermes Python</span><span>run_agent.py</span></div>
 <pre><code>def _persist_session(self, messages: List[Dict], conversation_history=None):
     self._drop_trailing_empty_response_scaffolding(messages)
@@ -737,7 +1073,7 @@ def _flush_messages_to_session_db(self, messages: List[Dict], conversation_histo
         msg[_DB_PERSISTED_MARKER] = True</code></pre>
       </div>
 
-      <div class="code-card">
+      <div class="code-card openclaw">
         <div class="code-title"><span>OpenClaw TypeScript</span><span>session.ts, jsonl-storage.ts</span></div>
 <pre><code>export class Session {
   private async appendTypedEntry(entry: SessionTreeEntry): Promise&lt;string&gt; {
