@@ -1,43 +1,63 @@
-# The 5-Part Agent Machine — Deep Dive
+# Hermes Agent and OpenClaw Runtime Code Map
 
-A single-page, self-contained deep dive explaining the universal architecture that every AI agent runs on. Strip away the branding and feature lists, and every agent — Claude Code, AutoGPT, LangChain agents, your custom bot — is the same machine with the same five parts.
+A single-page, self-contained comparison of how two production agent runtimes implement the same five-part machine:
 
-> Every AI agent ever built runs on this skeleton. No exceptions.
+- [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — Python gateway, `AIAgent`, SQLite session storage
+- [openclaw/openclaw](https://github.com/openclaw/openclaw) — TypeScript packages, `CoreAgentHarness`, JSONL session tree
+
+Each section maps a standard agent runtime model to real source files and public APIs, with Python-shaped Hermes excerpts and TypeScript-shaped OpenClaw excerpts. The examples are compact reconstructions that preserve filenames, class and function names, and data flow while omitting product-specific branches and provider details.
+
+## Runtime Model
+
+Every tool-using agent tends to follow the same shape:
+
+```text
+Inbound event
+  -> platform/session identity
+  -> hydrated prompt + message history
+  -> agent loop
+  -> tool dispatch
+  -> persisted transcript / memory
+  -> outbound response
+```
+
+This page walks that pipeline side by side in Hermes and OpenClaw.
 
 ## The Five Parts
 
-| Part | Role | Job |
-|------|------|-----|
-| **Platform Input** | The Ears | Receives and validates incoming messages; authorization lives here |
-| **Session Hydration** | The Memory Recall | Loads prior context within a token budget |
-| **Agent Loop** | The Brain | Iterates on the `messages` array, deciding what to do next |
-| **Tool Dispatch** | The Hands | Routes tool calls through a registry and executes them |
-| **Persistence** | The Diary | Records outcomes so the next session can recall them |
+| Part | Hermes Agent | OpenClaw |
+|------|--------------|----------|
+| **Platform Input** | `SessionSource`, `BasePlatformAdapter`, gateway allowlist handling | ACP runtime handles, turn input contracts, session store |
+| **Session Hydration** | `run_conversation(...)`, conversation history, compression hooks | `Session.buildContext()`, branch replay, compaction summaries |
+| **Agent Loop** | `agent.conversation_loop.run_conversation` with `max_iterations` | `agentLoop` / `runLoop` in `@openclaw/agent-core` |
+| **Tool Dispatch** | `tools.registry`, `agent.tool_executor` | `executeToolCalls`, before/after tool hooks |
+| **Persistence** | SQLite `SessionDB.append_message` plus JSON logs | Append-only JSONL session tree storage |
 
-The feedback loop between the Agent Loop and Tool Dispatch is what makes it an *agent* rather than a chatbot: a chatbot fires once and stops, while an agent loops until the model decides it's done.
+## What's on the Page
 
-## What's Inside
+- **Source anchors** — entry-point files in each repo for each runtime part
+- **Side-by-side code maps** — Hermes Python vs OpenClaw TypeScript for all five parts
+- **Coordination summary** — comparison table plus the main architectural difference (monolithic Python runtime vs factored TypeScript packages)
+- **Sticky sidebar navigation** with jump links to each section
+- **Dark and light themes** with preference saved in `localStorage`
+- **Responsive layout** for smaller screens
 
-For each of the five parts, the document covers:
+### Source Anchors
 
-- **What it is** and a real-world analogy (the running example is a 911 dispatch center)
-- **How it works**, with code examples
-- **How to evaluate it** — what a healthy vs. unhealthy implementation looks like
-- **Individual failure examples** — exactly what breaks and how to fix it, including:
-  - Duplicate message processing (Platform Input)
-  - Context overflow with no token budget (Session Hydration)
-  - Infinite tool loops and the `maxTurns` guard (Agent Loop)
-  - Ambiguous schemas producing wrong arguments (Tool Dispatch)
-  - Race conditions on concurrent sessions (Persistence)
-
-It closes with **Overlap Zones** (where the parts blur together), a full-system **Poor Coordination** failure walkthrough, and the mental model to keep.
+| Hermes (Python) | OpenClaw (TypeScript) |
+|-----------------|----------------------|
+| `run_agent.py` | `packages/agent-core/src/agent-loop.ts` |
+| `agent/conversation_loop.py` | `packages/agent-core/src/harness/agent-harness.ts` |
+| `agent/tool_executor.py` | `packages/agent-core/src/harness/session/session.ts` |
+| `tools/registry.py` | `packages/agent-core/src/harness/session/jsonl-storage.ts` |
+| `gateway/session.py`, `gateway/platforms/base.py` | `packages/acp-core/src/session.ts`, `runtime/types.ts` |
 
 ## Viewing It
 
-The entire site is a single, dependency-free `index.html` file. No build step, no package manager, no server required.
+The site is a single static `index.html` file. No build step, package manager, or server is required.
 
-- **Simplest:** open `index.html` directly in any browser.
-- **Local server** (optional):
+- Open `index.html` directly in a browser.
+- Optional local server:
 
   ```bash
   python3 -m http.server 8000
@@ -48,7 +68,8 @@ Fonts are loaded from Google Fonts, so an internet connection gives the intended
 
 ## Structure
 
-```
+```text
 agent-machine-deep-dive/
-└── index.html    # The complete deep-dive site (markup, styles, and content)
+├── index.html    # Complete comparison page (markup, styles, content)
+└── README.md
 ```
