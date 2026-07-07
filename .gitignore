@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Linux
+*~
+
+# Editors
+.idea/
+*.swp
+*.swo
+
+# Local AI / editor settings
+.claude/settings.local.json
