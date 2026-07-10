@@ -1,6 +1,6 @@
-# The 5-Part Agent Machine Loop with Tools
+# Agent Runtime
 
-A single-page, self-contained explainer of how two production agent runtimes implement the same five-part tool-using machine:
+A single-page, self-contained explainer of how two production agent runtimes implement the same five-part tool-using loop:
 
 - [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — Python gateway, `AIAgent`, SQLite session storage
 - [openclaw/openclaw](https://github.com/openclaw/openclaw) — TypeScript packages, `CoreAgentHarness`, JSONL session tree
@@ -9,7 +9,7 @@ Each section maps a standard agent runtime model to real source files and public
 
 ## Runtime Model
 
-Every tool-using agent tends to follow the same machine loop:
+Every tool-using agent tends to follow the same runtime loop:
 
 ```text
 Inbound event
@@ -70,7 +70,7 @@ Fonts are loaded from Google Fonts, so an internet connection gives the intended
 ## Structure
 
 ```text
-agent-machine-deep-dive/
+agent-runtime/
 ├── agent-runtime-map.json # Machine-readable runtime map
 ├── index.html             # Complete comparison page (markup, styles, content)
 ├── llms.txt               # Agent-readable text summary

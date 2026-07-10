@@ -17,3 +17,7 @@ Desktop.ini
 
 # Local AI / editor settings
 .claude/settings.local.json
+
+# Local tooling / scratch
+.playwright-mcp/
+.claude/
