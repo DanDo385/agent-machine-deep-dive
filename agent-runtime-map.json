@@ -1,6 +1,6 @@
 {
-  "title": "Hermes Runtime X-Ray",
-  "description": "An interactive observability explainer for a Hermes-style tool-using agent runtime, with prompt input, loop telemetry, model-visible prompt stack, tool events, token estimates, verification, and persistence boundaries.",
+  "title": "Agent Runtime",
+  "description": "A standardized explainer for the common tool-using agent runtime loop, mapped to Hermes Agent and OpenClaw source-shaped code examples.",
   "outerRails": {
     "inbound": "Inbound event",
     "outbound": "Outbound response"
@@ -70,19 +70,5 @@
   "exports": {
     "llmsTxt": "./llms.txt",
     "json": "./agent-runtime-map.json"
-  },
-  "name": "Hermes Runtime X-Ray",
-  "interactive_xray": {
-    "working_name": "Hermes Runtime X-Ray",
-    "rejected_name": "Hermes Agent Dissect",
-    "purpose": "Let a visitor enter a simple prompt and inspect the observable runtime path without exposing hidden chain-of-thought.",
-    "stages": [
-      "prompt intake",
-      "context build",
-      "loop policy",
-      "tool dispatch",
-      "verify and persist"
-    ],
-    "disclosure_policy": "Show intent, assumptions, tool selection rationale, evidence, and verification. Do not show hidden chain-of-thought, secrets, credentials, or private session fragments."
   }
 }
