@@ -1,6 +1,6 @@
-# Agent Runtime
+# Hermes Runtime X-Ray
 
-A single-page, self-contained explainer of how two production agent runtimes implement the same five-part tool-using loop:
+A single-page, self-contained explainer and interactive X-Ray of how Hermes-style tool-using agents digest a simple prompt through the runtime loop:
 
 - [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) — Python gateway, `AIAgent`, SQLite session storage
 - [openclaw/openclaw](https://github.com/openclaw/openclaw) — TypeScript packages, `CoreAgentHarness`, JSONL session tree
@@ -22,6 +22,10 @@ Inbound event
 ```
 
 This page walks that pipeline side by side in Hermes and OpenClaw.
+
+## Hermes Runtime X-Ray
+
+The page now includes a static interactive lab where a visitor can type a simple prompt and inspect the operational trace: prompt intake, context build, loop policy, tool dispatch, and verification. The trace exposes evidence and source landmarks, not hidden chain-of-thought.
 
 ## The Five Parts
 

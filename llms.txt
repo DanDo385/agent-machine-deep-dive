@@ -1,4 +1,4 @@
-# Agent Runtime
+# Hermes Runtime X-Ray
 
 This static explainer maps a standard tool-using agent runtime loop across NousResearch/hermes-agent and openclaw/openclaw.
 
@@ -38,3 +38,7 @@ Inbound event and outbound response are the outer rails around this five-part ru
 ## Machine-Readable Map
 
 JSON export: ./agent-runtime-map.json
+
+## Interactive X-Ray
+
+The demo includes a browser-only prompt input. Users can enter a simple request and inspect five observable runtime stages: prompt intake, context build, loop policy, tool dispatch, and verify/persist. The UI documents operational rationale and evidence without revealing hidden chain-of-thought, secrets, or private session fragments.
