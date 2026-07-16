@@ -1,0 +1,13 @@
+{
+  "project": "agent-runtime",
+  "shortClip": {
+    "youtubeUrl": "https://www.youtube.com/watch?v=lVwUmltuX0A",
+    "youtubeId": "lVwUmltuX0A",
+    "title": "Agent Runtime - Short Walkthrough"
+  },
+  "longClip": {
+    "youtubeUrl": "https://www.youtube.com/watch?v=pqcSllMfdCo",
+    "youtubeId": "pqcSllMfdCo",
+    "title": "Agent Runtime - Full Walkthrough"
+  }
+}
